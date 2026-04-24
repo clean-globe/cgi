@@ -396,8 +396,69 @@ function HFPageShell({ step, goTo, reachable, crumbActive = 'Detailed applicatio
   );
 }
 
+// ── Searchable single-select dropdown ─────────────────────────────────────────
+
+function HFSearchableSelect({ id, value, options, onChange, open, setOpen, placeholder }) {
+  const ref      = React.useRef(null);
+  const inputRef = React.useRef(null);
+  const [query, setQuery] = React.useState('');
+
+  React.useEffect(() => {
+    if (!open) { setQuery(''); return; }
+    setTimeout(() => inputRef.current && inputRef.current.focus(), 0);
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(null); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const filtered = options.filter((o) => o.toLowerCase().includes(query.toLowerCase()));
+
+  return (
+    <div
+      ref={ref}
+      style={{ ...hfStyles.dropBox, ...(open ? hfStyles.dropBoxFocus : {}) }}
+      onClick={() => setOpen(open ? null : id)}
+    >
+      {open ? (
+        <input
+          ref={inputRef}
+          style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: 14, fontFamily: 'inherit', color: '#0a0a0a', flex: 1, minWidth: 0, paddingLeft: 6 }}
+          placeholder="Search…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        !value
+          ? <span style={hfStyles.placeholder}>{placeholder || 'Select…'}</span>
+          : <span style={hfStyles.singleValue}>{value}</span>
+      )}
+      <span style={hfStyles.caret}><HFCaret /></span>
+      {open && (
+        <div style={hfStyles.menu} onClick={(e) => e.stopPropagation()}>
+          {filtered.length === 0 && (
+            <div style={{ padding: '12px 10px', fontSize: 13, color: '#a3a3a3', fontStyle: 'italic' }}>No matches.</div>
+          )}
+          {filtered.map((o) => (
+            <div
+              key={o}
+              style={{ ...hfStyles.menuItem, ...(o === value ? { background: '#fafaf9' } : {}) }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = '#fafaf9')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = o === value ? '#fafaf9' : 'transparent')}
+              onClick={() => { onChange(o); setOpen(null); }}
+            >
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: o === value ? '#0a0a0a' : '#e5e5e5', flexShrink: 0 }} />
+              {o}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 Object.assign(window, {
   hfStyles,
   HFCheckIcon, HFCaret, HFX, HFArrowRight, HFArrowLeft, HFPlus, HFEdit, HFTrash,
-  HFMultiSelect, HFSingleSelect, HFStepper, HFPageShell,
+  HFMultiSelect, HFSingleSelect, HFSearchableSelect, HFStepper, HFPageShell,
 });
