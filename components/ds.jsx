@@ -84,7 +84,7 @@ const hfStyles = {
     position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
     background: '#fff', border: '1px solid #e5e5e5', borderRadius: 10,
     boxShadow: '0 12px 28px -8px rgba(0,0,0,0.12), 0 4px 8px -4px rgba(0,0,0,0.06)',
-    padding: 4, zIndex: 30, maxHeight: 280, overflowY: 'auto',
+    padding: 4, zIndex: 30, maxHeight: 360, overflowY: 'auto',
   },
   menuHeader: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -226,9 +226,14 @@ function HFTrash() {
 
 function HFMultiSelect({ id, values, options, onToggle, open, setOpen, placeholder, showSelectAll = true, disabled = false }) {
   const ref = React.useRef(null);
+  const [menuPos, setMenuPos] = React.useState(null);
 
   React.useEffect(() => {
     if (!open) return;
+    if (ref.current) {
+      const r = ref.current.getBoundingClientRect();
+      setMenuPos({ top: r.bottom + 6, left: r.left, width: r.width });
+    }
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(null); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -259,8 +264,8 @@ function HFMultiSelect({ id, values, options, onToggle, open, setOpen, placehold
       ))}
       <span style={hfStyles.caret}><HFCaret /></span>
 
-      {open && !disabled && (
-        <div style={hfStyles.menu} onClick={(e) => e.stopPropagation()}>
+      {open && !disabled && menuPos && (
+        <div style={{ ...hfStyles.menu, position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width, right: 'auto' }} onClick={(e) => e.stopPropagation()}>
           <div style={hfStyles.menuHeader}>
             <span>Options · {values.length}/{options.length}</span>
             {showSelectAll && (
@@ -305,9 +310,14 @@ function HFMultiSelect({ id, values, options, onToggle, open, setOpen, placehold
 
 function HFSingleSelect({ id, value, options, onChange, open, setOpen, placeholder }) {
   const ref = React.useRef(null);
+  const [menuPos, setMenuPos] = React.useState(null);
 
   React.useEffect(() => {
     if (!open) return;
+    if (ref.current) {
+      const r = ref.current.getBoundingClientRect();
+      setMenuPos({ top: r.bottom + 6, left: r.left, width: r.width });
+    }
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(null); };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -323,8 +333,8 @@ function HFSingleSelect({ id, value, options, onChange, open, setOpen, placehold
         ? <span style={hfStyles.placeholder}>{placeholder || 'Select…'}</span>
         : <span style={hfStyles.singleValue}>{value}</span>}
       <span style={hfStyles.caret}><HFCaret /></span>
-      {open && (
-        <div style={hfStyles.menu} onClick={(e) => e.stopPropagation()}>
+      {open && menuPos && (
+        <div style={{ ...hfStyles.menu, position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width, right: 'auto' }} onClick={(e) => e.stopPropagation()}>
           {options.map((o) => (
             <div
               key={o}
@@ -402,9 +412,14 @@ function HFSearchableSelect({ id, value, options, onChange, open, setOpen, place
   const ref      = React.useRef(null);
   const inputRef = React.useRef(null);
   const [query, setQuery] = React.useState('');
+  const [menuPos, setMenuPos] = React.useState(null);
 
   React.useEffect(() => {
     if (!open) { setQuery(''); return; }
+    if (ref.current) {
+      const r = ref.current.getBoundingClientRect();
+      setMenuPos({ top: r.bottom + 6, left: r.left, width: r.width });
+    }
     setTimeout(() => inputRef.current && inputRef.current.focus(), 0);
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(null); };
     document.addEventListener('mousedown', handler);
@@ -434,8 +449,8 @@ function HFSearchableSelect({ id, value, options, onChange, open, setOpen, place
           : <span style={hfStyles.singleValue}>{value}</span>
       )}
       <span style={hfStyles.caret}><HFCaret /></span>
-      {open && (
-        <div style={hfStyles.menu} onClick={(e) => e.stopPropagation()}>
+      {open && menuPos && (
+        <div style={{ ...hfStyles.menu, position: 'fixed', top: menuPos.top, left: menuPos.left, width: menuPos.width, right: 'auto' }} onClick={(e) => e.stopPropagation()}>
           {filtered.length === 0 && (
             <div style={{ padding: '12px 10px', fontSize: 13, color: '#a3a3a3', fontStyle: 'italic' }}>No matches.</div>
           )}

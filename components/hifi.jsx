@@ -11,7 +11,8 @@ function HFClaimedMaterialsInput({ values, onChange }) {
 
   const addEntry = () => {
     if (!canAdd) return;
-    const entry = `${attribute} ${rawMaterial}`;
+    // If attribute is "No attribute", only store the raw material value
+    const entry = attribute === 'No attribute' ? rawMaterial : `${attribute} ${rawMaterial}`;
     if (!values.includes(entry)) onChange([...values, entry]);
     setRawMaterial('');
     setAttribute('');
