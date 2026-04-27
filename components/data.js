@@ -57,6 +57,25 @@ window.CGI_STANDARDS_TREE = [
   { label: 'PDS' },
 ];
 
+// Maps each claimed-material attribute to the standard labels it is compliant with.
+// Used on the Products screen to flag standards that don't match the selected attributes.
+window.CGI_ATTRIBUTE_STANDARDS = {
+  'In-conversion':              ['Organic Content Standard (OCS)', 'GOTS'],
+  'Organic':                    ['Organic Content Standard (OCS)', 'GOTS'],
+  'Recycled pre/post-consumer': ['GOTS'],
+  'Recycled pre-consumer':      ['Recycled Claim Standard (RCS)', 'Global Recycled Standard (GRS)'],
+  'Recycled post-consumer':     ['Recycled Claim Standard (RCS)', 'Global Recycled Standard (GRS)'],
+  'Responsible':                [
+    'Responsible Down Standard (RDS) – Supply Chain',
+    'Responsible Wool Standard (RWS)',
+    'Responsible Mohair Standard (RMS)',
+    'Responsible Alpaca Standard (RAS)',
+  ],
+  'Sustainably sourced':        ['GOTS'],
+  'Content claimed':            ['Content Claim Standard (CCS)'],
+  'Recycled pre-consumer organic': ['GOTS'],
+};
+
 window.CGI_SITE_FIELDS = [
   { key: 'siteName',    label: 'Site Name',    kind: 'text',     placeholder: 'Site Name'  },
   { key: 'siteAddress', label: 'Site Address', kind: 'textarea', placeholder: 'Street, City, Country'   },

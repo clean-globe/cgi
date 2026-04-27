@@ -208,7 +208,7 @@ function HFStandardsTree({ values, onChange }) {
 
 // ── Products screen ────────────────────────────────────────────────────────────
 
-function HFProducts({ values, onChange, onPrev, onNext }) {
+function HFProducts({ values, onChange, applyingStandards, onPrev, onNext }) {
   const [openField, setOpenField] = React.useState(null);
 
   const toggle = (field, opt) => {
@@ -219,6 +219,35 @@ function HFProducts({ values, onChange, onPrev, onNext }) {
   const allFilled     = window.CGI_FIELDS.every((f) => values[f.key].length > 0);
   const totalSelected = window.CGI_FIELDS.reduce((n, f) => n + values[f.key].length, 0);
   const remaining     = window.CGI_FIELDS.filter((f) => values[f.key].length === 0).length;
+
+  // Determine which applying standards comply with the claimed material attributes.
+  const { compliantStandards, nonCompliantStandards } = React.useMemo(() => {
+    const claims  = values.claimedMaterials || [];
+    const attrMap = window.CGI_ATTRIBUTE_STANDARDS || {};
+    // Sort by descending length so longer attribute names match before shorter prefixes.
+    const knownAttrs = [...window.CGI_OPTIONS.attribute]
+      .filter(a => a !== 'No attribute')
+      .sort((a, b) => b.length - a.length);
+
+    const usedAttrs = new Set();
+    claims.forEach(entry => {
+      for (const attr of knownAttrs) {
+        if (entry.startsWith(attr + ' ')) { usedAttrs.add(attr); break; }
+      }
+    });
+
+    if (usedAttrs.size === 0) {
+      return { compliantStandards: applyingStandards, nonCompliantStandards: [] };
+    }
+
+    const compliantSet = new Set();
+    usedAttrs.forEach(attr => (attrMap[attr] || []).forEach(s => compliantSet.add(s)));
+
+    return {
+      compliantStandards:    applyingStandards.filter(s =>  compliantSet.has(s)),
+      nonCompliantStandards: applyingStandards.filter(s => !compliantSet.has(s)),
+    };
+  }, [values.claimedMaterials, applyingStandards]);
 
   return (
     <>
@@ -234,32 +263,65 @@ function HFProducts({ values, onChange, onPrev, onNext }) {
 
       <div style={hfStyles.card}>
         {window.CGI_FIELDS.map((f, i) => (
-          <div key={f.key} style={{ ...hfStyles.field, ...(i === window.CGI_FIELDS.length - 1 ? hfStyles.fieldLast : {}) }}>
-            <div>
-              <div style={hfStyles.fieldLabel}>{f.label}</div>
-              <div style={hfStyles.fieldHint}>
-                {f.key === 'claimedMaterials'
-                  ? 'Required · select Raw Material + Attribute, then Add'
-                  : 'Required · multi-select'}
+          <React.Fragment key={f.key}>
+            <div style={{ ...hfStyles.field, ...(i === window.CGI_FIELDS.length - 1 ? hfStyles.fieldLast : {}) }}>
+              <div>
+                <div style={hfStyles.fieldLabel}>{f.label}</div>
+                <div style={hfStyles.fieldHint}>
+                  {f.key === 'claimedMaterials'
+                    ? 'Required · select Raw Material + Attribute, then Add'
+                    : 'Required · multi-select'}
+                </div>
               </div>
+
+              {f.key === 'claimedMaterials' ? (
+                <HFClaimedMaterialsInput
+                  values={values.claimedMaterials}
+                  onChange={(next) => onChange({ ...values, claimedMaterials: next })}
+                />
+              ) : (
+                <HFMultiSelect
+                  id={f.key}
+                  values={values[f.key]}
+                  options={window.CGI_OPTIONS[f.key]}
+                  onToggle={(o) => toggle(f.key, o)}
+                  open={openField === f.key}
+                  setOpen={setOpenField}
+                />
+              )}
             </div>
 
-            {f.key === 'claimedMaterials' ? (
-              <HFClaimedMaterialsInput
-                values={values.claimedMaterials}
-                onChange={(next) => onChange({ ...values, claimedMaterials: next })}
-              />
-            ) : (
-              <HFMultiSelect
-                id={f.key}
-                values={values[f.key]}
-                options={window.CGI_OPTIONS[f.key]}
-                onToggle={(o) => toggle(f.key, o)}
-                open={openField === f.key}
-                setOpen={setOpenField}
-              />
+            {f.key === 'claimedMaterials' && applyingStandards && applyingStandards.length > 0 && (
+              <div style={hfStyles.field}>
+                <div>
+                  <div style={hfStyles.fieldLabel}>Applying Standards</div>
+                  <div style={hfStyles.fieldHint}>Selected in Basic — read only</div>
+                </div>
+                <div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {compliantStandards.map((s) => (
+                      <span key={s} style={hfStyles.chip}>{s}</span>
+                    ))}
+                    {nonCompliantStandards.map((s) => (
+                      <span
+                        key={s}
+                        style={{ ...hfStyles.chip, background: '#fef9c3', borderColor: '#fde047', color: '#854d0e' }}
+                        title="Not compliant with selected claimed material attributes"
+                      >
+                        ⚠ {s}
+                      </span>
+                    ))}
+                  </div>
+                  {nonCompliantStandards.length > 0 && (
+                    <div style={{ marginTop: 10, padding: '8px 12px', background: '#fefce8', border: '1px solid #fde047', borderRadius: 8, fontSize: 13, color: '#854d0e', lineHeight: 1.5 }}>
+                      ⚠ <strong>{nonCompliantStandards.join(', ')}</strong>{' '}
+                      {nonCompliantStandards.length === 1 ? 'is' : 'are'} not compliant with the selected claimed material attributes.
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
-          </div>
+          </React.Fragment>
         ))}
       </div>
 

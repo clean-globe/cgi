@@ -96,7 +96,7 @@
             <div style={hfStyles.card}>
               <div style={{ ...hfStyles.field, ...hfStyles.fieldLast }}>
                 <div>
-                  <div style={hfStyles.fieldLabel}>Applying Standards</div>
+                  <div style={hfStyles.fieldLabel}>Standards</div>
                   <div style={hfStyles.fieldHint}>Required · expand sections to select</div>
                 </div>
                 <HFStandardsTree
@@ -124,6 +124,7 @@
           <HFProducts
             values={products}
             onChange={setProducts}
+            applyingStandards={applyingStandards}
             onPrev={() => setScreen('basic')}
             onNext={() => setScreen('sites')}
           />
