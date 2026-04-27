@@ -10,10 +10,9 @@ window.CGI_OPTIONS = {
 };
 
 window.CGI_FIELDS = [
-  { key: 'productGroup',      label: 'Product Group (PG)',                               shortLabel: 'Product Group'      },
-  { key: 'claimedMaterials',  label: 'Claimed Materials',                                 shortLabel: 'Claimed Materials'  },
-  { key: 'applyingStandards', label: 'Applying Standards',                                shortLabel: 'Applying Standards' },
-  { key: 'inputMaterials',    label: 'Input Materials Purchase (Outside of the Scope)',    shortLabel: 'Input Materials'    },
+  { key: 'productGroup',     label: 'Product Group (PG)',                               shortLabel: 'Product Group'     },
+  { key: 'claimedMaterials', label: 'Claimed Materials',                                 shortLabel: 'Claimed Materials' },
+  { key: 'inputMaterials',   label: 'Input Materials Purchase (Outside of the Scope)',    shortLabel: 'Input Materials'   },
 ];
 
 // Hierarchical standards tree — leaf labels are what gets stored in applyingStandards[].

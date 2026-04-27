@@ -1,12 +1,36 @@
 // Review screen — Products summary (single row) + Sites summary table + Submit.
 
-function HFReview({ products, sites, onPrev, onSubmit }) {
+function HFReview({ applyingStandards, products, sites, onPrev, onSubmit }) {
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, marginBottom: 8 }}>
         <div>
           <div style={hfStyles.h1}>Overview</div>
           <div style={hfStyles.sub}>Confirm your application details before submitting.</div>
+        </div>
+      </div>
+
+      {/* Basic — Applying Standards */}
+      <div style={hfStyles.sectionTitle}>Basic Information</div>
+      <div style={hfStyles.sectionSub}>Standards selected for this application.</div>
+      <div style={{ ...hfStyles.cardPadded, marginBottom: 40 }}>
+        <div style={hfStyles.tableWrap}>
+          <table style={hfStyles.table}>
+            <thead>
+              <tr><th style={hfStyles.th}>Applying Standards</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={hfStyles.td}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    {(applyingStandards || []).length === 0
+                      ? <span style={{ color: '#a3a3a3', fontStyle: 'italic' }}>—</span>
+                      : applyingStandards.map((v) => <span key={v} style={hfStyles.chip}>{v}</span>)}
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 

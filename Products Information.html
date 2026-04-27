@@ -42,46 +42,89 @@
   function DetailedApplication() {
     const initial = loadSaved();
 
-    const [screen, setScreen] = React.useState(initial.screen || 'products');
+    const [screen, setScreen] = React.useState(initial.screen || 'basic');
+    const [applyingStandards, setApplyingStandards] = React.useState(
+      initial.applyingStandards || (initial.products && initial.products.applyingStandards) || []
+    );
     const [products, setProducts] = React.useState(initial.products || {
-      productGroup: [], claimedMaterials: [], applyingStandards: [], inputMaterials: [],
+      productGroup: [], claimedMaterials: [], inputMaterials: [],
     });
     const [sites, setSites] = React.useState(initial.sites || []);
 
     // Persist state on every change so navigating away and returning keeps all work.
     React.useEffect(() => {
-      try { localStorage.setItem(CGI_STORAGE_KEY, JSON.stringify({ screen, products, sites })); } catch {}
-    }, [screen, products, sites]);
+      try { localStorage.setItem(CGI_STORAGE_KEY, JSON.stringify({ screen, applyingStandards, products, sites })); } catch {}
+    }, [screen, applyingStandards, products, sites]);
 
-    // When Applying Standards changes in Products, prune removed standards from any saved site.
+    // When Applying Standards changes, prune removed standards from any saved site.
     React.useEffect(() => {
-      const allowed = new Set(products.applyingStandards);
+      const allowed = new Set(applyingStandards);
       setSites((prev) => prev.map((s) => ({
         ...s, standards: (s.standards || []).filter((x) => allowed.has(x)),
       })));
-    }, [products.applyingStandards.join('|')]);
+    }, [applyingStandards.join('|')]);
 
-    // Stepper index: Basic=0 (done), Products=1, Sites=2, Review=3
-    const stepIndex = { products: 1, sites: 2, review: 3 }[screen];
+    const basicDone    = applyingStandards.length > 0;
+    const productsDone = basicDone && window.CGI_FIELDS.every((f) => (products[f.key] || []).length > 0);
+
+    // Stepper index: Basic=0, Products=1, Sites=2, Review=3
+    const stepIndex = { basic: 0, products: 1, sites: 2, review: 3 }[screen];
 
     const reachable = (i) => {
-      if (i === 1) return true;                                                                         // Products always reachable
-      if (i === 2) return window.CGI_FIELDS.every((f) => products[f.key].length > 0);                  // Sites: products complete
-      if (i === 3) return sites.length > 0 && window.CGI_FIELDS.every((f) => products[f.key].length > 0); // Review: sites + products
+      if (i === 0) return true;
+      if (i === 1) return basicDone;
+      if (i === 2) return productsDone;
+      if (i === 3) return productsDone && sites.length > 0;
       return false;
     };
 
     const goTo = (i) => {
-      const map = { 1: 'products', 2: 'sites', 3: 'review' };
-      if (reachable(i) && map[i]) setScreen(map[i]);
+      const map = { 0: 'basic', 1: 'products', 2: 'sites', 3: 'review' };
+      if (reachable(i) && map[i] !== undefined) setScreen(map[i]);
     };
 
     return (
       <HFPageShell step={stepIndex} goTo={goTo} reachable={reachable}>
+        {screen === 'basic' && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, marginBottom: 8 }}>
+              <div>
+                <div style={hfStyles.h1}>Basic Information</div>
+                <div style={hfStyles.sub}>Select the standards you are applying for before moving on to Products.</div>
+              </div>
+            </div>
+            <div style={hfStyles.card}>
+              <div style={{ ...hfStyles.field, ...hfStyles.fieldLast }}>
+                <div>
+                  <div style={hfStyles.fieldLabel}>Applying Standards</div>
+                  <div style={hfStyles.fieldHint}>Required · expand sections to select</div>
+                </div>
+                <HFStandardsTree
+                  values={applyingStandards}
+                  onChange={setApplyingStandards}
+                />
+              </div>
+            </div>
+            <div style={hfStyles.footer}>
+              <div style={hfStyles.help}>
+                {basicDone ? '✓ All fields complete' : '1 field remaining'}
+              </div>
+              <div style={hfStyles.btnRow}>
+                <button
+                  style={{ ...hfStyles.btn, ...(basicDone ? hfStyles.btnPrimary : hfStyles.btnDisabled) }}
+                  onClick={() => basicDone && setScreen('products')}
+                >
+                  Continue to Products <HFArrowRight />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
         {screen === 'products' && (
           <HFProducts
             values={products}
             onChange={setProducts}
+            onPrev={() => setScreen('basic')}
             onNext={() => setScreen('sites')}
           />
         )}
@@ -89,13 +132,14 @@
           <HFSites
             sites={sites}
             setSites={setSites}
-            availableStandards={products.applyingStandards}
+            availableStandards={applyingStandards}
             onPrev={() => setScreen('products')}
             onNext={() => setScreen('review')}
           />
         )}
         {screen === 'review' && (
           <HFReview
+            applyingStandards={applyingStandards}
             products={products}
             sites={sites}
             onPrev={() => setScreen('sites')}

@@ -208,7 +208,7 @@ function HFStandardsTree({ values, onChange }) {
 
 // ── Products screen ────────────────────────────────────────────────────────────
 
-function HFProducts({ values, onChange, onNext }) {
+function HFProducts({ values, onChange, onPrev, onNext }) {
   const [openField, setOpenField] = React.useState(null);
 
   const toggle = (field, opt) => {
@@ -226,8 +226,7 @@ function HFProducts({ values, onChange, onNext }) {
         <div>
           <div style={hfStyles.h1}>Products Information</div>
           <div style={hfStyles.sub}>
-            Tell us what you produce and which standards you're applying for.
-            You can select multiple values in every field.
+            Tell us what you produce. You can select multiple values in every field.
           </div>
         </div>
         <div style={{ ...hfStyles.countPill, marginBottom: 52 }}>{totalSelected} selected</div>
@@ -241,8 +240,6 @@ function HFProducts({ values, onChange, onNext }) {
               <div style={hfStyles.fieldHint}>
                 {f.key === 'claimedMaterials'
                   ? 'Required · select Raw Material + Attribute, then Add'
-                  : f.key === 'applyingStandards'
-                  ? 'Required · expand sections to select'
                   : 'Required · multi-select'}
               </div>
             </div>
@@ -251,11 +248,6 @@ function HFProducts({ values, onChange, onNext }) {
               <HFClaimedMaterialsInput
                 values={values.claimedMaterials}
                 onChange={(next) => onChange({ ...values, claimedMaterials: next })}
-              />
-            ) : f.key === 'applyingStandards' ? (
-              <HFStandardsTree
-                values={values.applyingStandards}
-                onChange={(next) => onChange({ ...values, applyingStandards: next })}
               />
             ) : (
               <HFMultiSelect
@@ -272,9 +264,9 @@ function HFProducts({ values, onChange, onNext }) {
       </div>
 
       <div style={hfStyles.footer}>
-        <div style={hfStyles.help}>
-          {allFilled ? '✓ All fields complete' : `${remaining} field${remaining === 1 ? '' : 's'} remaining`}
-        </div>
+        <button style={hfStyles.btn} onClick={onPrev}>
+          <HFArrowLeft /> Previous
+        </button>
         <div style={hfStyles.btnRow}>
           <button
             style={{ ...hfStyles.btn, ...(allFilled ? hfStyles.btnPrimary : hfStyles.btnDisabled) }}
@@ -288,4 +280,4 @@ function HFProducts({ values, onChange, onNext }) {
   );
 }
 
-window.HFProducts = HFProducts;
+Object.assign(window, { HFProducts, HFStandardsTree });
