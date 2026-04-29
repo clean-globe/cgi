@@ -25,11 +25,13 @@
 <!-- Shared data -->
 <script src="components/data.js"></script>
 
-<!-- Design system + screen components -->
-<script type="text/babel" src="components/ds.jsx"></script>
-<script type="text/babel" src="components/hifi.jsx"></script>
-<script type="text/babel" src="components/sites.jsx"></script>
-<script type="text/babel" src="components/review.jsx"></script>
+<!-- Screen components (load order matters) -->
+<script type="text/babel" src="components/ui.jsx"></script>
+<script type="text/babel" src="components/Detailed Application/basic.jsx"></script>
+<script type="text/babel" src="components/Detailed Application/products.jsx"></script>
+<script type="text/babel" src="components/Detailed Application/sites.jsx"></script>
+<script type="text/babel" src="components/Detailed Application/review.jsx"></script>
+<script type="text/babel" src="components/Detailed Application/submitted.jsx"></script>
 
 <!-- App entry point -->
 <script type="text/babel" data-presets="react">
@@ -42,7 +44,7 @@
   function DetailedApplication() {
     const initial = loadSaved();
 
-    const [screen, setScreen] = React.useState(initial.screen || 'basic');
+    const [screen, setScreen] = React.useState('basic');
     const [applyingStandards, setApplyingStandards] = React.useState(
       initial.applyingStandards || (initial.products && initial.products.applyingStandards) || []
     );
@@ -67,10 +69,11 @@
     const basicDone    = applyingStandards.length > 0;
     const productsDone = basicDone && window.CGI_FIELDS.every((f) => (products[f.key] || []).length > 0);
 
-    // Stepper index: Basic=0, Products=1, Sites=2, Review=3
-    const stepIndex = { basic: 0, products: 1, sites: 2, review: 3 }[screen];
+    // Stepper index: Basic=0, Products=1, Sites=2, Review=3, submitted=4 (all done)
+    const stepIndex = { basic: 0, products: 1, sites: 2, review: 3, submitted: 4 }[screen];
 
     const reachable = (i) => {
+      if (screen === 'submitted') return false;
       if (i === 0) return true;
       if (i === 1) return basicDone;
       if (i === 2) return productsDone;
@@ -86,39 +89,11 @@
     return (
       <HFPageShell step={stepIndex} goTo={goTo} reachable={reachable}>
         {screen === 'basic' && (
-          <>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, marginBottom: 8 }}>
-              <div>
-                <div style={hfStyles.h1}>Basic Information</div>
-                <div style={hfStyles.sub}>Select the standards you are applying for before moving on to Products.</div>
-              </div>
-            </div>
-            <div style={hfStyles.card}>
-              <div style={{ ...hfStyles.field, ...hfStyles.fieldLast }}>
-                <div>
-                  <div style={hfStyles.fieldLabel}>Standards</div>
-                  <div style={hfStyles.fieldHint}>Required · expand sections to select</div>
-                </div>
-                <HFStandardsTree
-                  values={applyingStandards}
-                  onChange={setApplyingStandards}
-                />
-              </div>
-            </div>
-            <div style={hfStyles.footer}>
-              <div style={hfStyles.help}>
-                {basicDone ? '✓ All fields complete' : '1 field remaining'}
-              </div>
-              <div style={hfStyles.btnRow}>
-                <button
-                  style={{ ...hfStyles.btn, ...(basicDone ? hfStyles.btnPrimary : hfStyles.btnDisabled) }}
-                  onClick={() => basicDone && setScreen('products')}
-                >
-                  Continue to Products <HFArrowRight />
-                </button>
-              </div>
-            </div>
-          </>
+          <HFBasic
+            values={applyingStandards}
+            onChange={setApplyingStandards}
+            onNext={() => setScreen('products')}
+          />
         )}
         {screen === 'products' && (
           <HFProducts
@@ -144,7 +119,12 @@
             products={products}
             sites={sites}
             onPrev={() => setScreen('sites')}
-            onSubmit={() => alert('Application submitted.')}
+            onSubmit={() => setScreen('submitted')}
+          />
+        )}
+        {screen === 'submitted' && (
+          <HFSubmitted
+            onGoHome={() => window.location.href = 'index.html'}
           />
         )}
       </HFPageShell>

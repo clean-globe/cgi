@@ -3,154 +3,230 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Detailed Application — Products Information</title>
+  <title>CGi Certification — Home</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    html, body { margin: 0; padding: 0; background: #f0eee9; min-height: 100%; }
-    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    *, *::before, *::after { box-sizing: border-box; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100%;
+      background: #f0eee9;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #0a0a0a;
+    }
+
+    .page {
+      min-height: 100vh;
+      padding: 56px 48px;
+    }
+
+    .wrap {
+      max-width: 1040px;
+      margin: 0 auto;
+    }
+
+    .crumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #737373;
+      font-weight: 500;
+      margin-bottom: 48px;
+    }
+    .crumbs span.sep { color: #d4d4d4; }
+    .crumbs span.active { color: #0a0a0a; }
+
+    .heading { margin-bottom: 8px; font-size: 36px; font-weight: 600; letter-spacing: -0.8px; line-height: 1.15; }
+    .sub     { font-size: 16px; color: #737373; margin-bottom: 52px; line-height: 1.5; max-width: 560px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #ebebeb;
+      border-radius: 14px;
+      padding: 28px 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      transition: box-shadow .15s, border-color .15s, transform .15s;
+    }
+    .card.clickable {
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+    .card.clickable:hover {
+      border-color: #0a0a0a;
+      box-shadow: 0 8px 24px -6px rgba(0,0,0,0.12);
+      transform: translateY(-2px);
+    }
+    .card.soon {
+      opacity: 0.55;
+      cursor: default;
+    }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: #f5f5f4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #525252;
+    }
+    .card.clickable:hover .card-icon {
+      background: #0a0a0a;
+      color: #fff;
+    }
+
+    .card-body { flex: 1; }
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      margin-bottom: 6px;
+    }
+    .card-desc {
+      font-size: 13px;
+      color: #737373;
+      line-height: 1.55;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .badge-soon {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: #a3a3a3;
+      background: #f5f5f4;
+      border: 1px solid #e7e5e4;
+      border-radius: 999px;
+      padding: 3px 10px;
+    }
+    .arrow {
+      color: #a3a3a3;
+      display: flex;
+      align-items: center;
+      transition: color .15s, transform .15s;
+    }
+    .card.clickable:hover .arrow {
+      color: #0a0a0a;
+      transform: translateX(3px);
+    }
+
+    @media (max-width: 640px) {
+      .page { padding: 32px 20px; }
+      .grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
-<div id="root"></div>
+<div class="page">
+  <div class="wrap">
 
-<!-- React 18 -->
-<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
-<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-<!-- Babel standalone for JSX -->
-<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+    <div class="crumbs">
+      <span>Applications</span>
+      <span class="sep">/</span>
+      <span class="active">New certification</span>
+    </div>
 
-<!-- Shared data -->
-<script src="components/data.js"></script>
+    <div class="heading">New Certification</div>
+    <p class="sub">Select the section you would like to fill in to continue your certification application.</p>
 
-<!-- Design system + screen components -->
-<script type="text/babel" src="components/ds.jsx"></script>
-<script type="text/babel" src="components/hifi.jsx"></script>
-<script type="text/babel" src="components/sites.jsx"></script>
-<script type="text/babel" src="components/review.jsx"></script>
+    <div class="grid">
 
-<!-- App entry point -->
-<script type="text/babel" data-presets="react">
-  const CGI_STORAGE_KEY = 'cgi.detailedApp.v1';
+      <!-- Preliminary Application — coming soon -->
+      <div class="card soon">
+        <div class="card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6h12M4 10h8M4 14h6" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="card-title">Preliminary Application</div>
+          <div class="card-desc">Submit initial eligibility details before starting the full certification process.</div>
+        </div>
+        <div class="card-footer">
+          <span class="badge-soon">Coming soon</span>
+        </div>
+      </div>
 
-  function loadSaved() {
-    try { return JSON.parse(localStorage.getItem(CGI_STORAGE_KEY)) || {}; } catch { return {}; }
-  }
+      <!-- Detailed Application -->
+      <a class="card clickable" href="Products Information.html">
+        <div class="card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="14" height="14" rx="2" />
+            <path d="M7 7h6M7 10h6M7 13h4" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="card-title">Detailed Application</div>
+          <div class="card-desc">Provide full product, material, and site information for your certification application.</div>
+        </div>
+        <div class="card-footer">
+          <span></span>
+          <span class="arrow">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 8h10M9 4l4 4-4 4" />
+            </svg>
+          </span>
+        </div>
+      </a>
 
-  function DetailedApplication() {
-    const initial = loadSaved();
+      <!-- System Plan -->
+      <a class="card clickable" href="System Plan.html">
+        <div class="card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 5h14M3 10h10M3 15h7" />
+            <circle cx="15" cy="13" r="3" />
+            <path d="M17.5 15.5l2 2" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="card-title">System Plan</div>
+          <div class="card-desc">Review and complete the system plan for each site included in your application.</div>
+        </div>
+        <div class="card-footer">
+          <span></span>
+          <span class="arrow">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 8h10M9 4l4 4-4 4" />
+            </svg>
+          </span>
+        </div>
+      </a>
 
-    const [screen, setScreen] = React.useState(initial.screen || 'basic');
-    const [applyingStandards, setApplyingStandards] = React.useState(
-      initial.applyingStandards || (initial.products && initial.products.applyingStandards) || []
-    );
-    const [products, setProducts] = React.useState(initial.products || {
-      productGroup: [], claimedMaterials: [], inputMaterials: [],
-    });
-    const [sites, setSites] = React.useState(initial.sites || []);
+      <!-- Product Information — coming soon -->
+      <div class="card soon">
+        <div class="card-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 2l2.5 5H18l-4.5 3.5 1.7 5.5L10 13l-5.2 3 1.7-5.5L2 7h5.5L10 2z" />
+          </svg>
+        </div>
+        <div class="card-body">
+          <div class="card-title">Product Information</div>
+          <div class="card-desc">Enter detailed product specifications and material compositions for certification.</div>
+        </div>
+        <div class="card-footer">
+          <span class="badge-soon">Coming soon</span>
+        </div>
+      </div>
 
-    // Persist state on every change so navigating away and returning keeps all work.
-    React.useEffect(() => {
-      try { localStorage.setItem(CGI_STORAGE_KEY, JSON.stringify({ screen, applyingStandards, products, sites })); } catch {}
-    }, [screen, applyingStandards, products, sites]);
-
-    // When Applying Standards changes, prune removed standards from any saved site.
-    React.useEffect(() => {
-      const allowed = new Set(applyingStandards);
-      setSites((prev) => prev.map((s) => ({
-        ...s, standards: (s.standards || []).filter((x) => allowed.has(x)),
-      })));
-    }, [applyingStandards.join('|')]);
-
-    const basicDone    = applyingStandards.length > 0;
-    const productsDone = basicDone && window.CGI_FIELDS.every((f) => (products[f.key] || []).length > 0);
-
-    // Stepper index: Basic=0, Products=1, Sites=2, Review=3
-    const stepIndex = { basic: 0, products: 1, sites: 2, review: 3 }[screen];
-
-    const reachable = (i) => {
-      if (i === 0) return true;
-      if (i === 1) return basicDone;
-      if (i === 2) return productsDone;
-      if (i === 3) return productsDone && sites.length > 0;
-      return false;
-    };
-
-    const goTo = (i) => {
-      const map = { 0: 'basic', 1: 'products', 2: 'sites', 3: 'review' };
-      if (reachable(i) && map[i] !== undefined) setScreen(map[i]);
-    };
-
-    return (
-      <HFPageShell step={stepIndex} goTo={goTo} reachable={reachable}>
-        {screen === 'basic' && (
-          <>
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, marginBottom: 8 }}>
-              <div>
-                <div style={hfStyles.h1}>Basic Information</div>
-                <div style={hfStyles.sub}>Select the standards you are applying for before moving on to Products.</div>
-              </div>
-            </div>
-            <div style={hfStyles.card}>
-              <div style={{ ...hfStyles.field, ...hfStyles.fieldLast }}>
-                <div>
-                  <div style={hfStyles.fieldLabel}>Applying Standards</div>
-                  <div style={hfStyles.fieldHint}>Required · expand sections to select</div>
-                </div>
-                <HFStandardsTree
-                  values={applyingStandards}
-                  onChange={setApplyingStandards}
-                />
-              </div>
-            </div>
-            <div style={hfStyles.footer}>
-              <div style={hfStyles.help}>
-                {basicDone ? '✓ All fields complete' : '1 field remaining'}
-              </div>
-              <div style={hfStyles.btnRow}>
-                <button
-                  style={{ ...hfStyles.btn, ...(basicDone ? hfStyles.btnPrimary : hfStyles.btnDisabled) }}
-                  onClick={() => basicDone && setScreen('products')}
-                >
-                  Continue to Products <HFArrowRight />
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-        {screen === 'products' && (
-          <HFProducts
-            values={products}
-            onChange={setProducts}
-            onPrev={() => setScreen('basic')}
-            onNext={() => setScreen('sites')}
-          />
-        )}
-        {screen === 'sites' && (
-          <HFSites
-            sites={sites}
-            setSites={setSites}
-            availableStandards={applyingStandards}
-            onPrev={() => setScreen('products')}
-            onNext={() => setScreen('review')}
-          />
-        )}
-        {screen === 'review' && (
-          <HFReview
-            applyingStandards={applyingStandards}
-            products={products}
-            sites={sites}
-            onPrev={() => setScreen('sites')}
-            onSubmit={() => alert('Application submitted.')}
-          />
-        )}
-      </HFPageShell>
-    );
-  }
-
-  ReactDOM.createRoot(document.getElementById('root')).render(<DetailedApplication />);
-</script>
+    </div>
+  </div>
+</div>
 </body>
 </html>

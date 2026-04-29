@@ -79,12 +79,13 @@ function HFReview({ applyingStandards, products, sites, onPrev, onSubmit }) {
                 <th style={hfStyles.th}>Site Address</th>
                 <th style={hfStyles.th}>Site Type</th>
                 <th style={hfStyles.th}>Processes</th>
+                <th style={hfStyles.th}>No. of People</th>
                 <th style={hfStyles.th}>Standards</th>
               </tr>
             </thead>
             <tbody>
               {sites.length === 0 && (
-                <tr><td colSpan="6" style={hfStyles.emptyState}>No sites.</td></tr>
+                <tr><td colSpan="7" style={hfStyles.emptyState}>No sites.</td></tr>
               )}
               {sites.map((s, i) => (
                 <tr key={i}>
@@ -97,6 +98,7 @@ function HFReview({ applyingStandards, products, sites, onPrev, onSubmit }) {
                       {s.processes.map((p) => <span key={p} style={hfStyles.chip}>{p}</span>)}
                     </div>
                   </td>
+                  <td style={hfStyles.td}>{s.numberOfPeople}</td>
                   <td style={hfStyles.td}>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       {s.standards.map((p) => <span key={p} style={hfStyles.chip}>{p}</span>)}

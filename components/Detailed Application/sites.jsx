@@ -1,7 +1,7 @@
 // Sites Information screen — add / edit / delete sites, then proceed to Review.
 
 function emptySite() {
-  return { siteName: '', siteAddress: '', siteType: '', processes: [], standards: [] };
+  return { siteName: '', siteAddress: '', siteType: '', processes: [], numberOfPeople: '', standards: [] };
 }
 
 function validSite(s) {
@@ -10,6 +10,7 @@ function validSite(s) {
     s.siteAddress.trim() &&
     s.siteType &&
     (s.processes || []).length > 0 &&
+    (s.numberOfPeople || '').trim() &&
     (s.standards || []).length > 0
   );
 }
@@ -241,6 +242,7 @@ function HFSites({ sites, setSites, availableStandards, onPrev, onNext }) {
                   <th style={hfStyles.th}>Site Address</th>
                   <th style={hfStyles.th}>Site Type</th>
                   <th style={hfStyles.th}>Processes</th>
+                  <th style={hfStyles.th}>No. of People</th>
                   <th style={hfStyles.th}>Standards</th>
                   <th style={{ ...hfStyles.th, ...hfStyles.thRight }}>Actions</th>
                 </tr>
@@ -248,7 +250,7 @@ function HFSites({ sites, setSites, availableStandards, onPrev, onNext }) {
               <tbody>
                 {sites.length === 0 && (
                   <tr>
-                    <td colSpan="7" style={hfStyles.emptyState}>
+                    <td colSpan="8" style={hfStyles.emptyState}>
                       No sites added yet. Fill the form above and click <b>Add site</b>.
                     </td>
                   </tr>
@@ -264,6 +266,7 @@ function HFSites({ sites, setSites, availableStandards, onPrev, onNext }) {
                         {s.processes.map((p) => <span key={p} style={hfStyles.chip}>{p}</span>)}
                       </div>
                     </td>
+                    <td style={hfStyles.td}>{s.numberOfPeople}</td>
                     <td style={hfStyles.td}>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                         {s.standards.map((p) => <span key={p} style={hfStyles.chip}>{p}</span>)}

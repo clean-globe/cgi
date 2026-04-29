@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>System Plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    html, body { margin: 0; padding: 0; background: #f0eee9; min-height: 100%; }
+    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- React 18 -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Shared data & UI primitives -->
+<script src="components/data.js"></script>
+<script type="text/babel" src="components/ui.jsx"></script>
+
+<!-- System Plan -->
+<script type="text/babel" data-presets="react">
+  const CGI_STORAGE_KEY = 'cgi.detailedApp.v1';
+
+  function loadAppData() {
+    try { return JSON.parse(localStorage.getItem(CGI_STORAGE_KEY)) || {}; } catch { return {}; }
+  }
+
+  // ── Site-name dropdown with hover-address disambiguation ────────────────────
+
+  function HFSiteSelect({ sites, selectedIdx, onChange }) {
+    const [open,       setOpen]       = React.useState(false);
+    const [hoveredIdx, setHoveredIdx] = React.useState(null);
+    const ref = React.useRef(null);
+    const [menuPos, setMenuPos] = React.useState(null);
+
+    // How many sites share each name (used to decide when to show the address hint)
+    const nameCounts = React.useMemo(() => {
+      const counts = {};
+      sites.forEach((s) => { counts[s.siteName] = (counts[s.siteName] || 0) + 1; });
+      return counts;
+    }, [sites]);
+
+    React.useEffect(() => {
+      if (!open) return;
+      if (ref.current) {
+        const r          = ref.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - r.bottom - 10;
+        const spaceAbove = r.top - 10;
+        const maxH       = 360;
+        if (spaceBelow >= 120 || spaceBelow >= spaceAbove) {
+          setMenuPos({ top: r.bottom + 6, bottom: 'auto', left: r.left, width: Math.max(r.width, 320), maxHeight: Math.min(maxH, Math.max(120, spaceBelow)) });
+        } else {
+          setMenuPos({ top: 'auto', bottom: window.innerHeight - r.top + 6, left: r.left, width: Math.max(r.width, 320), maxHeight: Math.min(maxH, Math.max(120, spaceAbove)) });
+        }
+      }
+      const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    const selectedSite = selectedIdx !== null ? sites[selectedIdx] : null;
+
+    return (
+      <div
+        ref={ref}
+        style={{ ...hfStyles.dropBox, ...(open ? hfStyles.dropBoxFocus : {}) }}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {!selectedSite
+          ? <span style={hfStyles.placeholder}>Select a site…</span>
+          : <span style={hfStyles.singleValue}>{selectedSite.siteName}</span>}
+        <span style={hfStyles.caret}><HFCaret /></span>
+
+        {open && menuPos && (
+          <div
+            style={{
+              ...hfStyles.menu,
+              position:  'fixed',
+              top:       menuPos.top,
+              bottom:    menuPos.bottom,
+              left:      menuPos.left,
+              width:     menuPos.width,
+              maxHeight: menuPos.maxHeight,
+              right:     'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {sites.length === 0 && (
+              <div style={{ padding: '12px 10px', fontSize: 13, color: '#a3a3a3', fontStyle: 'italic' }}>
+                No sites found — submit a Detailed Application first.
+              </div>
+            )}
+            {sites.map((site, i) => {
+              const isDuplicate = nameCounts[site.siteName] > 1;
+              const isSelected  = selectedIdx === i;
+              const isHovered   = hoveredIdx  === i;
+              const showAddress = isDuplicate && isHovered;
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display:       'flex',
+                    flexDirection: 'column',
+                    alignItems:    'flex-start',
+                    gap:           0,
+                    padding:       showAddress ? '10px 12px 8px' : '10px 12px',
+                    borderRadius:  6,
+                    cursor:        'pointer',
+                    background:    isSelected || isHovered ? '#fafaf9' : 'transparent',
+                    transition:    'background .08s',
+                  }}
+                  onMouseEnter={() => setHoveredIdx(i)}
+                  onMouseLeave={() => setHoveredIdx(null)}
+                  onClick={() => { onChange(i); setOpen(false); }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{
+                      width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                      background: isSelected ? '#0a0a0a' : '#e5e5e5',
+                    }} />
+                    <span style={{ fontSize: 14, fontWeight: 500, color: '#0a0a0a' }}>{site.siteName}</span>
+                  </div>
+                  {showAddress && (
+                    <div style={{ fontSize: 12, color: '#737373', paddingLeft: 18, marginTop: 4, lineHeight: 1.45 }}>
+                      {site.siteAddress}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── System Plan ─────────────────────────────────────────────────────────────
+
+  function SystemPlan() {
+    const appData            = React.useMemo(loadAppData, []);
+    const sites              = appData.sites              || [];
+    const availableStandards = appData.applyingStandards  || [];
+
+    const emptyForm = () => ({
+      siteAddress:    '',
+      siteType:       '',
+      processes:      [],
+      numberOfPeople: '',
+      standards:      [],
+    });
+
+    const [selectedIdx, setSelectedIdx] = React.useState(null);
+    const [form,        setForm]        = React.useState(emptyForm());
+    const [openField,   setOpenField]   = React.useState(null);
+
+    const selectSite = (i) => {
+      setSelectedIdx(i);
+      const s = sites[i];
+      setForm({
+        siteAddress:    s.siteAddress    || '',
+        siteType:       s.siteType       || '',
+        processes:      [...(s.processes  || [])],
+        numberOfPeople: s.numberOfPeople || '',
+        standards:      [...(s.standards  || [])],
+      });
+      setOpenField(null);
+    };
+
+    const update      = (k, v) => setForm((f) => ({ ...f, [k]: v }));
+    const toggleMulti = (k, o) => {
+      const cur = form[k] || [];
+      update(k, cur.includes(o) ? cur.filter((x) => x !== o) : [...cur, o]);
+    };
+
+    const noSite = selectedIdx === null;
+
+    return (
+      <>
+      <HFTopNav />
+      <div style={hfStyles.page}>
+        <div style={hfStyles.wrap}>
+
+          {/* Breadcrumb */}
+          <div style={hfStyles.crumbs}>
+            <span>Applications</span>
+            <span style={hfStyles.crumbSep}>/</span>
+            <span>New certification</span>
+            <span style={hfStyles.crumbSep}>/</span>
+            <span style={hfStyles.crumbActive}>System Plan</span>
+          </div>
+
+          {/* Heading */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, marginBottom: 8 }}>
+            <div>
+              <div style={hfStyles.h1}>System Plan</div>
+              <div style={hfStyles.sub}>
+                Select a site to auto-fill its details. All fields can be adjusted after selection.
+              </div>
+            </div>
+          </div>
+
+          <div style={hfStyles.card}>
+
+            {/* Site Name — dropdown */}
+            <div style={hfStyles.field}>
+              <div>
+                <div style={hfStyles.fieldLabel}>Site Name</div>
+                <div style={hfStyles.fieldHint}>Required · select a site</div>
+              </div>
+              <HFSiteSelect
+                sites={sites}
+                selectedIdx={selectedIdx}
+                onChange={selectSite}
+              />
+            </div>
+
+            {/* Site Address */}
+            <div style={hfStyles.field}>
+              <div>
+                <div style={hfStyles.fieldLabel}>Site Address</div>
+                <div style={hfStyles.fieldHint}>Auto-filled from site</div>
+              </div>
+              <textarea
+                style={{
+                  ...hfStyles.textarea,
+                  ...(noSite ? { background: '#f5f5f4', color: '#a3a3a3', cursor: 'not-allowed' } : {}),
+                }}
+                placeholder={noSite ? 'Select a site above to auto-fill' : ''}
+                value={form.siteAddress}
+                readOnly={noSite}
+                onChange={(e) => update('siteAddress', e.target.value)}
+                onFocus={(e) => { if (!noSite) { e.target.style.borderColor = '#0a0a0a'; e.target.style.boxShadow = '0 0 0 3px rgba(10,10,10,0.06)'; } }}
+                onBlur={(e)  => { e.target.style.borderColor = '#e5e5e5'; e.target.style.boxShadow = 'none'; }}
+              />
+            </div>
+
+            {/* Site Type */}
+            <div style={hfStyles.field}>
+              <div>
+                <div style={hfStyles.fieldLabel}>Site Type</div>
+                <div style={hfStyles.fieldHint}>Auto-filled · single select</div>
+              </div>
+              <HFSingleSelect
+                id="sp-siteType"
+                value={form.siteType}
+                options={window.CGI_OPTIONS.siteType}
+                onChange={(v) => update('siteType', v)}
+                open={openField === 'sp-siteType'}
+                setOpen={setOpenField}
+                placeholder={noSite ? 'Select a site above to auto-fill' : 'Select…'}
+              />
+            </div>
+
+            {/* Processes */}
+            <div style={hfStyles.field}>
+              <div>
+                <div style={hfStyles.fieldLabel}>Processes</div>
+                <div style={hfStyles.fieldHint}>Auto-filled · multi-select</div>
+              </div>
+              <HFMultiSelect
+                id="sp-processes"
+                values={form.processes}
+                options={window.CGI_OPTIONS.processes}
+                onToggle={(o) => toggleMulti('processes', o)}
+                open={openField === 'sp-processes'}
+                setOpen={setOpenField}
+                placeholder={noSite ? 'Select a site above to auto-fill' : 'Select one or more…'}
+              />
+            </div>
+
+            {/* No. of People */}
+            <div style={hfStyles.field}>
+              <div>
+                <div style={hfStyles.fieldLabel}>No. of People Working (including contractors &amp; staff)</div>
+                <div style={hfStyles.fieldHint}>Auto-filled</div>
+              </div>
+              <input
+                style={{
+                  ...hfStyles.input,
+                  ...(noSite ? { background: '#f5f5f4', color: '#a3a3a3', cursor: 'not-allowed' } : {}),
+                }}
+                placeholder={noSite ? 'Select a site above to auto-fill' : 'Enter number'}
+                value={form.numberOfPeople}
+                readOnly={noSite}
+                onChange={(e) => update('numberOfPeople', e.target.value)}
+                onFocus={(e) => { if (!noSite) { e.target.style.borderColor = '#0a0a0a'; e.target.style.boxShadow = '0 0 0 3px rgba(10,10,10,0.06)'; } }}
+                onBlur={(e)  => { e.target.style.borderColor = '#e5e5e5'; e.target.style.boxShadow = 'none'; }}
+              />
+            </div>
+
+            {/* Standards */}
+            <div style={{ ...hfStyles.field, ...hfStyles.fieldLast }}>
+              <div>
+                <div style={hfStyles.fieldLabel}>Standards</div>
+                <div style={hfStyles.fieldHint}>Auto-filled · multi-select</div>
+              </div>
+              <HFMultiSelect
+                id="sp-standards"
+                values={form.standards}
+                options={availableStandards}
+                onToggle={(o) => toggleMulti('standards', o)}
+                open={openField === 'sp-standards'}
+                setOpen={setOpenField}
+                placeholder={noSite ? 'Select a site above to auto-fill' : 'Select one or more…'}
+              />
+            </div>
+
+          </div>
+        </div>
+      </div>
+      </>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<SystemPlan />);
+</script>
+</body>
+</html>
