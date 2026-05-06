@@ -157,7 +157,7 @@ function HFMultiSelect({ id, values, options, onToggle, open, setOpen, placehold
 
 // ── Single-select dropdown ─────────────────────────────────────────────────────
 
-function HFSingleSelect({ id, value, options, onChange, open, setOpen, placeholder }) {
+function HFSingleSelect({ id, value, options, onChange, open, setOpen, placeholder, disabled = false }) {
   const ref = React.useRef(null);
   const [menuPos, setMenuPos] = React.useState(null);
 
@@ -182,14 +182,14 @@ function HFSingleSelect({ id, value, options, onChange, open, setOpen, placehold
   return (
     <div
       ref={ref}
-      style={{ ...hfStyles.dropBox, ...(open ? hfStyles.dropBoxFocus : {}) }}
-      onClick={() => setOpen(open ? null : id)}
+      style={{ ...hfStyles.dropBox, ...(open ? hfStyles.dropBoxFocus : {}), ...(disabled ? { background: '#f5f5f4', cursor: 'not-allowed', opacity: 0.7 } : {}) }}
+      onClick={() => !disabled && setOpen(open ? null : id)}
     >
       {!value
         ? <span style={hfStyles.placeholder}>{placeholder || 'Select…'}</span>
         : <span style={hfStyles.singleValue}>{value}</span>}
       <span style={hfStyles.caret}><HFCaret /></span>
-      {open && menuPos && (
+      {open && !disabled && menuPos && (
         <div style={{ ...hfStyles.menu, position: 'fixed', top: menuPos.top, bottom: menuPos.bottom, left: menuPos.left, width: menuPos.width, right: 'auto', maxHeight: menuPos.maxHeight }} onClick={(e) => e.stopPropagation()}>
           {options.map((o) => (
             <div

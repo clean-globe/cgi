@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Process Information</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    html, body { margin: 0; padding: 0; background: #f0eee9; min-height: 100%; }
+    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="components/data.js"></script>
+<script type="text/babel" src="components/ui.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+  const CGI_STORAGE_KEY = 'cgi.detailedApp.v1';
+  const PI_STORAGE_KEY  = 'cgi.processInfo.v1';
+
+  function loadAppData()    { try { return JSON.parse(localStorage.getItem(CGI_STORAGE_KEY)) || {}; } catch { return {}; } }
+  function loadProcessInfo() { try { return JSON.parse(localStorage.getItem(PI_STORAGE_KEY))  || {}; } catch { return {}; } }
+  function saveProcessInfo(idx, rows) {
+    const all = loadProcessInfo();
+    all[idx] = rows;
+    try { localStorage.setItem(PI_STORAGE_KEY, JSON.stringify(all)); } catch {}
+  }
+
+  function ProcessInformation() {
+    const appData = React.useMemo(loadAppData, []);
+    const sites   = appData.sites || [];
+
+    const siteIdx = React.useMemo(() => {
+      const p = new URLSearchParams(window.location.search);
+      const v = parseInt(p.get('site'), 10);
+      return (!isNaN(v) && v >= 0 && v < sites.length) ? v : null;
+    }, []);
+
+    const site      = siteIdx !== null ? sites[siteIdx] : null;
+    const processes = site ? (site.processes || []) : [];
+
+    const emptyPending  = () => ({ processName: '', wastage: '', avgCapacity: '', machines: [], pendingType: '', pendingCount: '' });
+    const [processRows,   setProcessRows]   = React.useState(() => siteIdx !== null ? (loadProcessInfo()[siteIdx] || []) : []);
+    const [pending,       setPending]       = React.useState(emptyPending());
+    const [openProcField, setOpenProcField] = React.useState(null);
+
+    // Persist rows for this site on every change
+    React.useEffect(() => {
+      if (siteIdx !== null) saveProcessInfo(siteIdx, processRows);
+    }, [processRows]);
+
+    const savedInfo         = loadProcessInfo();
+    const completedCount    = sites.filter((_, i) => (savedInfo[i] || []).length > 0).length;
+    const allSitesDone      = completedCount === sites.length;
+    const [showNote, setShowNote] = React.useState(false);
+
+    const handleViewOverview = () => {
+      if (!allSitesDone) { setShowNote(true); return; }
+      window.location.href = 'Process Overview.html';
+    };
+    const availableProcs    = processes.filter(p => !processRows.some(r => r.processName === p));
+
+    const updatePending     = (k, v) => setPending(p => ({ ...p, [k]: v }));
+    const addPendingMach    = () => {
+      if (!pending.pendingType && !pending.pendingCount) return;
+      setPending(p => ({ ...p, machines: [...p.machines, { type: p.pendingType, count: p.pendingCount }], pendingType: '', pendingCount: '' }));
+    };
+    const removePendingMach = (mi) => setPending(p => ({ ...p, machines: p.machines.filter((_, i) => i !== mi) }));
+    const commitRow = () => {
+      if (!pending.processName) return;
+      setProcessRows(p => [...p, { processName: pending.processName, wastage: pending.wastage, avgCapacity: pending.avgCapacity, machines: pending.machines }]);
+      setPending(emptyPending());
+      setOpenProcField(null);
+    };
+    const removeRow = (i) => setProcessRows(p => p.filter((_, idx) => idx !== i));
+
+    const lbl      = { fontSize: 11, fontWeight: 600, color: '#737373', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'block' };
+    const focusOn  = (e) => { e.target.style.borderColor = '#0a0a0a'; e.target.style.boxShadow = '0 0 0 3px rgba(10,10,10,0.06)'; };
+    const focusOff = (e) => { e.target.style.borderColor = '#e5e5e5'; e.target.style.boxShadow = 'none'; };
+
+    if (!site) {
+      return (
+        <>
+          <HFTopNav />
+          <div style={hfStyles.page}>
+            <div style={hfStyles.wrap}>
+              <div style={{ marginTop: 60, textAlign: 'center', fontSize: 15, color: '#737373' }}>
+                No site selected.{' '}
+                <a href="System Plan.html" style={{ color: '#0a0a0a', fontWeight: 600, textDecoration: 'none' }}>
+                  Go back to System Plan
+                </a>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <HFTopNav />
+        <div style={hfStyles.page}>
+          <div style={hfStyles.wrap}>
+
+            {/* Breadcrumb */}
+            <div style={hfStyles.crumbs}>
+              <span>Applications</span>
+              <span style={hfStyles.crumbSep}>/</span>
+              <span>New certification</span>
+              <span style={hfStyles.crumbSep}>/</span>
+              <a href="System Plan.html" style={{ color: '#737373', textDecoration: 'none', fontWeight: 500 }}>System Plan</a>
+              <span style={hfStyles.crumbSep}>/</span>
+              <span style={hfStyles.crumbActive}>Process Information</span>
+            </div>
+
+            {/* Heading */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={hfStyles.h1}>Process Information</div>
+              <div style={hfStyles.sub}>of {site.siteName}</div>
+            </div>
+
+            {/* Input panel */}
+            <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 10, padding: '20px', marginBottom: 16 }}>
+
+              {/* Process */}
+              <div style={{ marginBottom: 16 }}>
+                <span style={lbl}>Process</span>
+                <HFSingleSelect
+                  id="pi-proc"
+                  value={pending.processName}
+                  options={availableProcs}
+                  onChange={(v) => updatePending('processName', v)}
+                  open={openProcField === 'pi-proc'}
+                  setOpen={setOpenProcField}
+                  placeholder="Select process…"
+                />
+              </div>
+
+              {/* Wastage % + Avg. Capacity */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                <div>
+                  <span style={lbl}>Wastage %</span>
+                  <input style={{ ...hfStyles.input, width: '100%' }} placeholder="0.00"
+                    value={pending.wastage} onChange={(e) => updatePending('wastage', e.target.value)}
+                    onFocus={focusOn} onBlur={focusOff} />
+                </div>
+                <div>
+                  <span style={lbl}>Avg. Capacity</span>
+                  <input style={{ ...hfStyles.input, width: '100%' }} placeholder="0"
+                    value={pending.avgCapacity} onChange={(e) => updatePending('avgCapacity', e.target.value)}
+                    onFocus={focusOn} onBlur={focusOff} />
+                </div>
+              </div>
+
+              {/* Type & No. of Machines */}
+              <div style={{ marginBottom: 16 }}>
+                <span style={lbl}>Type &amp; No. of Machines</span>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input style={{ ...hfStyles.input, flex: 1 }} placeholder="Type"
+                    value={pending.pendingType} onChange={(e) => updatePending('pendingType', e.target.value)}
+                    onFocus={focusOn} onBlur={focusOff} />
+                  <input style={{ ...hfStyles.input, width: 80 }} placeholder="No."
+                    value={pending.pendingCount} onChange={(e) => updatePending('pendingCount', e.target.value)}
+                    onFocus={focusOn} onBlur={focusOff} />
+                  <button onClick={addPendingMach}
+                    style={{ ...hfStyles.btn, ...hfStyles.btnSecondary, padding: '7px 16px', fontSize: 13, flexShrink: 0 }}>
+                    Add
+                  </button>
+                </div>
+                {pending.machines.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+                    {pending.machines.map((m, mi) => (
+                      <span key={mi} style={hfStyles.chip}>
+                        {m.type || '—'}-{m.count || '—'}
+                        <button style={hfStyles.chipX}
+                          onClick={(e) => { e.stopPropagation(); removePendingMach(mi); }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#e7e5e4'; e.currentTarget.style.color = '#0a0a0a'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#737373'; }}>
+                          <HFX />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add to table */}
+              <button
+                onClick={commitRow}
+                disabled={!pending.processName}
+                style={{ ...hfStyles.btn, ...hfStyles.btnPrimary, gap: 6, ...(!pending.processName ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}
+              >
+                <HFPlus /> Add to Table
+              </button>
+            </div>
+
+            {/* Table */}
+            {processRows.length > 0 && (
+              <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 1.4fr 120px 72px', background: '#fafaf9', borderBottom: '1px solid #ebebeb', padding: '10px 16px', fontSize: 11, fontWeight: 600, color: '#737373', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                  <div>Process</div>
+                  <div>Wastage %</div>
+                  <div>Type &amp; No. of Machines</div>
+                  <div>Avg. Capacity</div>
+                  <div></div>
+                </div>
+                {processRows.map((row, ri) => (
+                  <div key={ri} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 1.4fr 120px 72px', padding: '12px 16px', borderBottom: ri < processRows.length - 1 ? '1px solid #f5f5f4' : 'none', alignItems: 'center' }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: '#0a0a0a' }}>{row.processName}</div>
+                    <div style={{ fontSize: 14, color: '#525252' }}>{row.wastage || '—'}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {row.machines.length === 0
+                        ? <span style={{ fontSize: 13, color: '#a3a3a3' }}>—</span>
+                        : row.machines.map((m, mi) => (
+                            <span key={mi} style={{ ...hfStyles.chip, paddingRight: 10 }}>
+                              {m.type || '—'}-{m.count || '—'}
+                            </span>
+                          ))}
+                    </div>
+                    <div style={{ fontSize: 14, color: '#525252' }}>{row.avgCapacity || '—'}</div>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
+                      <button
+                        onClick={() => {
+                          setPending({ processName: row.processName, wastage: row.wastage, avgCapacity: row.avgCapacity, machines: [...row.machines], pendingType: '', pendingCount: '' });
+                          removeRow(ri);
+                          setOpenProcField(null);
+                        }}
+                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a3a3a3', padding: 4, borderRadius: 4 }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#0a0a0a'; e.currentTarget.style.background = '#f5f5f4'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = '#a3a3a3'; e.currentTarget.style.background = 'transparent'; }}>
+                        <HFEdit />
+                      </button>
+                      <button
+                        onClick={() => removeRow(ri)}
+                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a3a3a3', padding: 4, borderRadius: 4 }}
+                        onMouseEnter={(e) => { e.currentTarget.style.color = '#b91c1c'; e.currentTarget.style.background = '#fff1f2'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.color = '#a3a3a3'; e.currentTarget.style.background = 'transparent'; }}>
+                        <HFTrash />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+              <button
+                onClick={() => window.location.href = 'System Plan.html'}
+                style={{ ...hfStyles.btn, ...hfStyles.btnSecondary, gap: 8 }}
+              >
+                <HFPlus /> Add Another Site
+              </button>
+              <button
+                onClick={handleViewOverview}
+                style={{ ...hfStyles.btn, ...hfStyles.btnPrimary, gap: 8 }}
+              >
+                View Overview <HFArrowRight />
+              </button>
+            </div>
+
+            {/* Note — only shown after clicking View Overview when sites are incomplete */}
+            {showNote && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '12px 16px', marginTop: 14 }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#d97706" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                  <path d="M8 2l6 11H2L8 2z" /><path d="M8 7v3M8 11.5v.5" />
+                </svg>
+                <span style={{ fontSize: 13, color: '#92400e', lineHeight: 1.5 }}>
+                  Process information has been added for <strong>{completedCount}</strong> of <strong>{sites.length}</strong> sites.
+                  {' '}You can still{' '}
+                  <span
+                    onClick={() => window.location.href = 'Process Overview.html'}
+                    style={{ fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+                  >
+                    proceed to the overview
+                  </span>
+                  {' '}or add the remaining sites first.
+                </span>
+              </div>
+            )}
+
+            <div style={{ marginBottom: 48 }} />
+
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<ProcessInformation />);
+</script>
+</body>
+</html>

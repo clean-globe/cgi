@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Process Overview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    html, body { margin: 0; padding: 0; background: #f0eee9; min-height: 100%; }
+    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead th {
+      background: #fafaf9;
+      font-size: 11px;
+      font-weight: 600;
+      color: #737373;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      padding: 11px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e5e5e5;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      font-size: 13px;
+      color: #525252;
+      padding: 11px 14px;
+      border-bottom: 1px solid #f5f5f4;
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #fafaf9; }
+
+    td.col-site { font-weight: 600; color: #0a0a0a; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="components/data.js"></script>
+<script type="text/babel" src="components/ui.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+  const CGI_STORAGE_KEY = 'cgi.detailedApp.v1';
+  const PI_STORAGE_KEY  = 'cgi.processInfo.v1';
+
+  function loadAppData()     { try { return JSON.parse(localStorage.getItem(CGI_STORAGE_KEY)) || {}; } catch { return {}; } }
+  function loadProcessInfo() { try { return JSON.parse(localStorage.getItem(PI_STORAGE_KEY))  || {}; } catch { return {}; } }
+
+  function ProcessOverview() {
+    const appData     = React.useMemo(loadAppData,     []);
+    const processInfo = React.useMemo(loadProcessInfo, []);
+    const sites       = appData.sites || [];
+
+    const chip = { display: 'inline-flex', alignItems: 'center', background: '#f5f5f4', border: '1px solid #e7e5e4', borderRadius: 999, fontSize: 11, fontWeight: 500, color: '#525252', padding: '2px 8px', marginRight: 4, whiteSpace: 'nowrap' };
+
+    // One row per site; all processes grouped inside that row
+    const rows = sites.map((site, si) => ({
+      site,
+      siteIdx: si,
+      procs: processInfo[si] || [],
+    }));
+
+    return (
+      <>
+        <HFTopNav />
+        <div style={hfStyles.page}>
+          <div style={hfStyles.wrap}>
+
+            <div style={hfStyles.crumbs}>
+              <span>Applications</span>
+              <span style={hfStyles.crumbSep}>/</span>
+              <span>New certification</span>
+              <span style={hfStyles.crumbSep}>/</span>
+              <a href="System Plan.html" style={{ color: '#737373', textDecoration: 'none', fontWeight: 500 }}>System Plan</a>
+              <span style={hfStyles.crumbSep}>/</span>
+              <span style={hfStyles.crumbActive}>Overview</span>
+            </div>
+
+            <div style={{ marginBottom: 28 }}>
+              <div style={hfStyles.h1}>Overview</div>
+              <div style={hfStyles.sub}>All sites and their process information.</div>
+            </div>
+
+            {rows.length === 0 ? (
+              <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 12, padding: '48px', textAlign: 'center', fontSize: 14, color: '#a3a3a3', fontStyle: 'italic' }}>
+                No sites found. Complete the Detailed Application first.
+              </div>
+            ) : (
+              <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 12, overflow: 'auto', marginBottom: 48 }}>
+                <table>
+                  <thead>
+                    <tr>
+                      <th colSpan={4} style={{ borderRight: '1px solid #e5e5e5', textAlign: 'center', letterSpacing: 0.8 }}>Site Information</th>
+                      <th colSpan={4} style={{ borderRight: '1px solid #e5e5e5', textAlign: 'center', letterSpacing: 0.8 }}>Process Information</th>
+                      <th style={{ textAlign: 'center' }}></th>
+                    </tr>
+                    <tr>
+                      <th>Site Name</th>
+                      <th>Site Type</th>
+                      <th>No. of People</th>
+                      <th style={{ borderRight: '1px solid #e5e5e5' }}>Standards</th>
+                      <th>Process</th>
+                      <th>Wastage %</th>
+                      <th>Type &amp; No. of Machines</th>
+                      <th style={{ borderRight: '1px solid #e5e5e5' }}>Avg. Capacity</th>
+                      <th style={{ textAlign: 'center' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((r, i) => {
+                      const procUrl = `Process Information.html?site=${r.siteIdx}`;
+                      const btnBase = { border: 'none', background: 'transparent', cursor: 'pointer', color: '#a3a3a3', padding: '4px 6px', borderRadius: 4, lineHeight: 1 };
+                      const cellStack = { display: 'flex', flexDirection: 'column', gap: 6 };
+                      const divider = { borderBottom: '1px dashed #f0f0f0', paddingBottom: 6, marginBottom: 0 };
+                      return (
+                        <tr key={i}>
+                          <td className="col-site" style={{ verticalAlign: 'top' }}>{r.site.siteName || '—'}</td>
+                          <td style={{ verticalAlign: 'top' }}>{r.site.siteType || '—'}</td>
+                          <td style={{ verticalAlign: 'top' }}>{r.site.numberOfPeople || '—'}</td>
+                          <td style={{ borderRight: '1px solid #e5e5e5', verticalAlign: 'top' }}>
+                            {(r.site.standards || []).length === 0
+                              ? <span style={{ color: '#a3a3a3' }}>—</span>
+                              : r.site.standards.map((s, si) => <span key={si} style={chip}>{s}</span>)}
+                          </td>
+                          {r.procs.length === 0 ? (
+                            <td colSpan={4} style={{ color: '#a3a3a3', fontStyle: 'italic', borderRight: '1px solid #e5e5e5', verticalAlign: 'top' }}>No process information added.</td>
+                          ) : (
+                            <>
+                              <td style={{ verticalAlign: 'top' }}>
+                                <div style={cellStack}>
+                                  {r.procs.map((p, pi) => (
+                                    <div key={pi} style={pi < r.procs.length - 1 ? { ...divider, fontWeight: 500, color: '#0a0a0a' } : { fontWeight: 500, color: '#0a0a0a' }}>{p.processName || '—'}</div>
+                                  ))}
+                                </div>
+                              </td>
+                              <td style={{ verticalAlign: 'top' }}>
+                                <div style={cellStack}>
+                                  {r.procs.map((p, pi) => (
+                                    <div key={pi} style={pi < r.procs.length - 1 ? divider : {}}>{p.wastage || '—'}</div>
+                                  ))}
+                                </div>
+                              </td>
+                              <td style={{ verticalAlign: 'top' }}>
+                                <div style={cellStack}>
+                                  {r.procs.map((p, pi) => (
+                                    <div key={pi} style={pi < r.procs.length - 1 ? { ...divider, display: 'flex', flexWrap: 'wrap', gap: 4 } : { display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                      {(p.machines || []).length === 0
+                                        ? <span style={{ color: '#a3a3a3' }}>—</span>
+                                        : p.machines.map((m, mi) => <span key={mi} style={chip}>{m.type || '—'}-{m.count || '—'}</span>)}
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                              <td style={{ borderRight: '1px solid #e5e5e5', verticalAlign: 'top' }}>
+                                <div style={cellStack}>
+                                  {r.procs.map((p, pi) => (
+                                    <div key={pi} style={pi < r.procs.length - 1 ? divider : {}}>{p.avgCapacity || '—'}</div>
+                                  ))}
+                                </div>
+                              </td>
+                            </>
+                          )}
+                          <td style={{ textAlign: 'center', whiteSpace: 'nowrap', verticalAlign: 'top' }}>
+                            <button
+                              title="Edit processes"
+                              onClick={() => window.location.href = procUrl}
+                              style={btnBase}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = '#0a0a0a'; e.currentTarget.style.background = '#f5f5f4'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = '#a3a3a3'; e.currentTarget.style.background = 'transparent'; }}
+                            >
+                              <HFEdit />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24, marginBottom: 48 }}>
+              <button
+                onClick={() => window.location.href = 'System Plan Submitted.html'}
+                style={{ ...hfStyles.btn, ...hfStyles.btnPrimary, gap: 8 }}
+              >
+                Submit System Plan <HFArrowRight />
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<ProcessOverview />);
+</script>
+</body>
+</html>

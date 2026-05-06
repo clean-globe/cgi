@@ -28,10 +28,10 @@
 <!-- System Plan -->
 <script type="text/babel" data-presets="react">
   const CGI_STORAGE_KEY = 'cgi.detailedApp.v1';
+  const PI_STORAGE_KEY  = 'cgi.processInfo.v1';
 
-  function loadAppData() {
-    try { return JSON.parse(localStorage.getItem(CGI_STORAGE_KEY)) || {}; } catch { return {}; }
-  }
+  function loadAppData()     { try { return JSON.parse(localStorage.getItem(CGI_STORAGE_KEY)) || {}; } catch { return {}; } }
+  function loadProcessInfo() { try { return JSON.parse(localStorage.getItem(PI_STORAGE_KEY))  || {}; } catch { return {}; } }
 
   // ── Site-name dropdown with hover-address disambiguation ────────────────────
 
@@ -145,9 +145,20 @@
   // ── System Plan ─────────────────────────────────────────────────────────────
 
   function SystemPlan() {
-    const appData            = React.useMemo(loadAppData, []);
-    const sites              = appData.sites              || [];
-    const availableStandards = appData.applyingStandards  || [];
+    const appData            = React.useMemo(loadAppData,     []);
+    const processInfo        = React.useMemo(loadProcessInfo, []);
+    const sites              = appData.sites             || [];
+    const availableStandards = appData.applyingStandards || [];
+
+    // Sites that already have process information saved are excluded from the dropdown
+    const completedSet = new Set(
+      Object.keys(processInfo).filter(k => (processInfo[k] || []).length > 0).map(Number)
+    );
+    const availableSiteEntries = sites
+      .map((s, i) => ({ site: s, originalIdx: i }))
+      .filter(({ originalIdx }) => !completedSet.has(originalIdx));
+    const availableSites    = availableSiteEntries.map(e => e.site);
+    const originalIndexMap  = availableSiteEntries.map(e => e.originalIdx);
 
     const emptyForm = () => ({
       siteAddress:    '',
@@ -159,7 +170,6 @@
 
     const [selectedIdx, setSelectedIdx] = React.useState(null);
     const [form,        setForm]        = React.useState(emptyForm());
-    const [openField,   setOpenField]   = React.useState(null);
 
     const selectSite = (i) => {
       setSelectedIdx(i);
@@ -171,13 +181,6 @@
         numberOfPeople: s.numberOfPeople || '',
         standards:      [...(s.standards  || [])],
       });
-      setOpenField(null);
-    };
-
-    const update      = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-    const toggleMulti = (k, o) => {
-      const cur = form[k] || [];
-      update(k, cur.includes(o) ? cur.filter((x) => x !== o) : [...cur, o]);
     };
 
     const noSite = selectedIdx === null;
@@ -202,7 +205,7 @@
             <div>
               <div style={hfStyles.h1}>System Plan</div>
               <div style={hfStyles.sub}>
-                Select a site to auto-fill its details. All fields can be adjusted after selection.
+                Select a site to auto-fill its details.
               </div>
             </div>
           </div>
@@ -216,9 +219,9 @@
                 <div style={hfStyles.fieldHint}>Required · select a site</div>
               </div>
               <HFSiteSelect
-                sites={sites}
-                selectedIdx={selectedIdx}
-                onChange={selectSite}
+                sites={availableSites}
+                selectedIdx={selectedIdx !== null ? originalIndexMap.findIndex(oi => oi === selectedIdx) : null}
+                onChange={(i) => selectSite(originalIndexMap[i])}
               />
             </div>
 
@@ -231,14 +234,12 @@
               <textarea
                 style={{
                   ...hfStyles.textarea,
+                  cursor: 'default',
                   ...(noSite ? { background: '#f5f5f4', color: '#a3a3a3', cursor: 'not-allowed' } : {}),
                 }}
                 placeholder={noSite ? 'Select a site above to auto-fill' : ''}
                 value={form.siteAddress}
-                readOnly={noSite}
-                onChange={(e) => update('siteAddress', e.target.value)}
-                onFocus={(e) => { if (!noSite) { e.target.style.borderColor = '#0a0a0a'; e.target.style.boxShadow = '0 0 0 3px rgba(10,10,10,0.06)'; } }}
-                onBlur={(e)  => { e.target.style.borderColor = '#e5e5e5'; e.target.style.boxShadow = 'none'; }}
+                readOnly
               />
             </div>
 
@@ -246,34 +247,13 @@
             <div style={hfStyles.field}>
               <div>
                 <div style={hfStyles.fieldLabel}>Site Type</div>
-                <div style={hfStyles.fieldHint}>Auto-filled · single select</div>
+                <div style={hfStyles.fieldHint}>Auto-filled</div>
               </div>
-              <HFSingleSelect
-                id="sp-siteType"
-                value={form.siteType}
-                options={window.CGI_OPTIONS.siteType}
-                onChange={(v) => update('siteType', v)}
-                open={openField === 'sp-siteType'}
-                setOpen={setOpenField}
-                placeholder={noSite ? 'Select a site above to auto-fill' : 'Select…'}
-              />
-            </div>
-
-            {/* Processes */}
-            <div style={hfStyles.field}>
-              <div>
-                <div style={hfStyles.fieldLabel}>Processes</div>
-                <div style={hfStyles.fieldHint}>Auto-filled · multi-select</div>
+              <div style={{ ...hfStyles.dropBox, cursor: 'default', ...(noSite ? { background: '#f5f5f4', cursor: 'not-allowed' } : {}) }}>
+                {!form.siteType
+                  ? <span style={hfStyles.placeholder}>Select a site above to auto-fill</span>
+                  : <span style={hfStyles.singleValue}>{form.siteType}</span>}
               </div>
-              <HFMultiSelect
-                id="sp-processes"
-                values={form.processes}
-                options={window.CGI_OPTIONS.processes}
-                onToggle={(o) => toggleMulti('processes', o)}
-                open={openField === 'sp-processes'}
-                setOpen={setOpenField}
-                placeholder={noSite ? 'Select a site above to auto-fill' : 'Select one or more…'}
-              />
             </div>
 
             {/* No. of People */}
@@ -285,14 +265,12 @@
               <input
                 style={{
                   ...hfStyles.input,
+                  cursor: 'default',
                   ...(noSite ? { background: '#f5f5f4', color: '#a3a3a3', cursor: 'not-allowed' } : {}),
                 }}
-                placeholder={noSite ? 'Select a site above to auto-fill' : 'Enter number'}
+                placeholder={noSite ? 'Select a site above to auto-fill' : ''}
                 value={form.numberOfPeople}
-                readOnly={noSite}
-                onChange={(e) => update('numberOfPeople', e.target.value)}
-                onFocus={(e) => { if (!noSite) { e.target.style.borderColor = '#0a0a0a'; e.target.style.boxShadow = '0 0 0 3px rgba(10,10,10,0.06)'; } }}
-                onBlur={(e)  => { e.target.style.borderColor = '#e5e5e5'; e.target.style.boxShadow = 'none'; }}
+                readOnly
               />
             </div>
 
@@ -302,18 +280,32 @@
                 <div style={hfStyles.fieldLabel}>Standards</div>
                 <div style={hfStyles.fieldHint}>Auto-filled · multi-select</div>
               </div>
-              <HFMultiSelect
-                id="sp-standards"
-                values={form.standards}
-                options={availableStandards}
-                onToggle={(o) => toggleMulti('standards', o)}
-                open={openField === 'sp-standards'}
-                setOpen={setOpenField}
-                placeholder={noSite ? 'Select a site above to auto-fill' : 'Select one or more…'}
-              />
+              <div style={{ ...hfStyles.dropBox, cursor: 'default', flexWrap: 'wrap', ...(noSite ? { background: '#f5f5f4', cursor: 'not-allowed' } : {}) }}>
+                {form.standards.length === 0
+                  ? <span style={hfStyles.placeholder}>Select a site above to auto-fill</span>
+                  : form.standards.map((v) => <span key={v} style={{ ...hfStyles.chip, paddingRight: 10 }}>{v}</span>)}
+              </div>
             </div>
 
           </div>
+
+          {/* Next: Process Information */}
+          <div style={{ display: 'flex', gap: 12, marginTop: 24, marginBottom: 48 }}>
+            <button
+              disabled={noSite}
+              onClick={() => window.location.href = `Process Information.html?site=${selectedIdx}`}
+              style={{ ...hfStyles.btn, ...hfStyles.btnPrimary, gap: 8, ...(noSite ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}
+            >
+              Add Processes to the Site <HFArrowRight />
+            </button>
+            <button
+              onClick={() => window.location.href = 'Process Overview.html'}
+              style={{ ...hfStyles.btn, ...hfStyles.btnSecondary, gap: 8 }}
+            >
+              View System Plan Overview <HFArrowRight />
+            </button>
+          </div>
+
         </div>
       </div>
       </>
