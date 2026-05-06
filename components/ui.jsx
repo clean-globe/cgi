@@ -280,9 +280,7 @@ function HFPageShell({ step, goTo, reachable, crumbActive = 'Detailed applicatio
       <div style={hfStyles.page}>
         <div style={hfStyles.wrap}>
           <div style={hfStyles.crumbs}>
-            <span>Applications</span>
-            <span style={hfStyles.crumbSep}>/</span>
-            <span>New certification</span>
+            <a href="index.html" style={{ color: '#737373', textDecoration: 'none', fontWeight: 500 }}>Home</a>
             <span style={hfStyles.crumbSep}>/</span>
             <span style={hfStyles.crumbActive}>{crumbActive}</span>
           </div>

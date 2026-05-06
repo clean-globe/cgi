@@ -147,7 +147,8 @@
   function SystemPlan() {
     const appData            = React.useMemo(loadAppData,     []);
     const processInfo        = React.useMemo(loadProcessInfo, []);
-    const sites              = appData.sites             || [];
+    const isSubmitted        = appData.screen === 'submitted';
+    const sites              = isSubmitted ? (appData.sites || []) : [];
     const availableStandards = appData.applyingStandards || [];
 
     // Sites that already have process information saved are excluded from the dropdown
@@ -168,8 +169,16 @@
       standards:      [],
     });
 
+    const allSitesDone = sites.length > 0 && sites.every((_, i) => completedSet.has(i));
+
     const [selectedIdx, setSelectedIdx] = React.useState(null);
     const [form,        setForm]        = React.useState(emptyForm());
+    const [showNote,    setShowNote]    = React.useState(false);
+
+    const handleViewOverview = () => {
+      if (!allSitesDone) { setShowNote(true); return; }
+      window.location.href = 'Process Overview.html';
+    };
 
     const selectSite = (i) => {
       setSelectedIdx(i);
@@ -185,6 +194,35 @@
 
     const noSite = selectedIdx === null;
 
+    if (!isSubmitted) {
+      return (
+        <>
+        <HFTopNav />
+        <div style={hfStyles.page}>
+          <div style={hfStyles.wrap}>
+            <div style={hfStyles.crumbs}>
+              <a href="index.html" style={{ color: '#737373', textDecoration: 'none', fontWeight: 500 }}>Home</a>
+              <span style={hfStyles.crumbSep}>/</span>
+              <span style={hfStyles.crumbActive}>System Plan</span>
+            </div>
+            <div style={{ marginTop: 48, background: '#fff', border: '1px solid #ebebeb', borderRadius: 12, padding: '48px 40px', textAlign: 'center' }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: '#0a0a0a', marginBottom: 10 }}>Detailed Application not submitted</div>
+              <div style={{ fontSize: 14, color: '#737373', marginBottom: 28, lineHeight: 1.6 }}>
+                Please complete and submit the Detailed Application before filling in the System Plan.
+              </div>
+              <button
+                onClick={() => window.location.href = 'Products Information.html'}
+                style={{ ...hfStyles.btn, ...hfStyles.btnPrimary, gap: 8 }}
+              >
+                Go to Detailed Application <HFArrowRight />
+              </button>
+            </div>
+          </div>
+        </div>
+        </>
+      );
+    }
+
     return (
       <>
       <HFTopNav />
@@ -193,9 +231,7 @@
 
           {/* Breadcrumb */}
           <div style={hfStyles.crumbs}>
-            <span>Applications</span>
-            <span style={hfStyles.crumbSep}>/</span>
-            <span>New certification</span>
+            <a href="index.html" style={{ color: '#737373', textDecoration: 'none', fontWeight: 500 }}>Home</a>
             <span style={hfStyles.crumbSep}>/</span>
             <span style={hfStyles.crumbActive}>System Plan</span>
           </div>
@@ -275,7 +311,7 @@
             </div>
 
             {/* Standards */}
-            <div style={{ ...hfStyles.field, ...hfStyles.fieldLast }}>
+            <div style={hfStyles.field}>
               <div>
                 <div style={hfStyles.fieldLabel}>Standards</div>
                 <div style={hfStyles.fieldHint}>Auto-filled · multi-select</div>
@@ -287,24 +323,51 @@
               </div>
             </div>
 
+            {/* Add Processes button inside card */}
+            <div style={{ ...hfStyles.fieldLast, display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
+              <button
+                disabled={noSite}
+                onClick={() => window.location.href = `Process Information.html?site=${selectedIdx}`}
+                style={{ ...hfStyles.btn, ...hfStyles.btnPrimary, gap: 8, ...(noSite ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}
+              >
+                Add Processes to the Site <HFArrowRight />
+              </button>
+            </div>
+
           </div>
 
-          {/* Next: Process Information */}
-          <div style={{ display: 'flex', gap: 12, marginTop: 24, marginBottom: 48 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16, marginBottom: 48 }}>
             <button
-              disabled={noSite}
-              onClick={() => window.location.href = `Process Information.html?site=${selectedIdx}`}
-              style={{ ...hfStyles.btn, ...hfStyles.btnPrimary, gap: 8, ...(noSite ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}
+              onClick={() => window.location.href = 'index.html'}
+              style={{ ...hfStyles.btn, ...hfStyles.btnSecondary, gap: 8 }}
             >
-              Add Processes to the Site <HFArrowRight />
+              ← Previous
             </button>
             <button
-              onClick={() => window.location.href = 'Process Overview.html'}
+              onClick={handleViewOverview}
               style={{ ...hfStyles.btn, ...hfStyles.btnSecondary, gap: 8 }}
             >
               View System Plan Overview <HFArrowRight />
             </button>
           </div>
+
+          {showNote && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '12px 16px', marginBottom: 32 }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#d97706" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                <path d="M8 2l6 11H2L8 2z" /><path d="M8 7v3M8 11.5v.5" />
+              </svg>
+              <span style={{ fontSize: 13, color: '#92400e', lineHeight: 1.5 }}>
+                Process information has not been added for all sites yet. You can still{' '}
+                <span
+                  onClick={() => window.location.href = 'Process Overview.html'}
+                  style={{ fontWeight: 600, textDecoration: 'underline', cursor: 'pointer' }}
+                >
+                  proceed to the overview
+                </span>
+                {' '}or add the remaining sites first.
+              </span>
+            </div>
+          )}
 
         </div>
       </div>
