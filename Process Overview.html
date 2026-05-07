@@ -212,7 +212,11 @@
               </button>
               <button
                 disabled={!allSitesDone}
-                onClick={() => allSitesDone && (window.location.href = 'System Plan Submitted.html')}
+                onClick={() => {
+                  if (!allSitesDone) return;
+                  try { localStorage.setItem('cgi.systemPlanSubmitted.v1', 'true'); } catch {}
+                  window.location.href = 'System Plan Submitted.html';
+                }}
                 style={{ ...hfStyles.btn, ...hfStyles.btnPrimary, gap: 8, ...(!allSitesDone ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}
               >
                 Submit System Plan <HFArrowRight />

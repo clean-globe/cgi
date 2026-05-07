@@ -26,10 +26,12 @@
 <script type="text/babel" data-presets="react">
   const CGI_STORAGE_KEY  = 'cgi.detailedApp.v1';
   const PI_STORAGE_KEY   = 'cgi.productInfo.v1';
+  const SP_SUBMITTED_KEY = 'cgi.systemPlanSubmitted.v1';
 
-  function loadAppData()      { try { return JSON.parse(localStorage.getItem(CGI_STORAGE_KEY)) || {}; } catch { return {}; } }
-  function loadProductInfo()  { try { return JSON.parse(localStorage.getItem(PI_STORAGE_KEY))  || []; } catch { return []; } }
+  function loadAppData()         { try { return JSON.parse(localStorage.getItem(CGI_STORAGE_KEY)) || {}; } catch { return {}; } }
+  function loadProductInfo()     { try { return JSON.parse(localStorage.getItem(PI_STORAGE_KEY))  || []; } catch { return []; } }
   function saveProductInfo(rows) { try { localStorage.setItem(PI_STORAGE_KEY, JSON.stringify(rows)); } catch {} }
+  function isSystemPlanSubmitted() { try { return localStorage.getItem(SP_SUBMITTED_KEY) === 'true'; } catch { return false; } }
 
   // Flatten CGI_STANDARDS_TREE to leaf labels
   function flattenStandards(nodes) {
@@ -397,6 +399,7 @@
   }
 
   function ProductInformation() {
+    const spSubmitted        = React.useMemo(isSystemPlanSubmitted, []);
     const appData            = React.useMemo(loadAppData, []);
     const savedClaimedMats   = (appData.products && appData.products.claimedMaterials) || [];
     const selectedGroups     = (appData.products && appData.products.productGroup) || [];
@@ -478,6 +481,35 @@
     const focusOff = (e) => { e.target.style.borderColor = '#e5e5e5'; e.target.style.boxShadow = 'none'; };
 
     const chip = { display: 'inline-flex', alignItems: 'center', background: '#f5f5f4', border: '1px solid #e7e5e4', borderRadius: 6, fontSize: 12, fontWeight: 500, color: '#0a0a0a', padding: '2px 8px', marginRight: 4, marginBottom: 2 };
+
+    if (!spSubmitted) {
+      return (
+        <>
+          <HFTopNav />
+          <div style={hfStyles.page}>
+            <div style={hfStyles.wrap}>
+              <div style={hfStyles.crumbs}>
+                <a href="index.html" style={{ color: '#737373', textDecoration: 'none', fontWeight: 500 }}>Home</a>
+                <span style={hfStyles.crumbSep}>/</span>
+                <span style={hfStyles.crumbActive}>Product Specification</span>
+              </div>
+              <div style={{ marginTop: 48, background: '#fff', border: '1px solid #ebebeb', borderRadius: 12, padding: '48px 40px', textAlign: 'center' }}>
+                <div style={{ fontSize: 16, fontWeight: 600, color: '#0a0a0a', marginBottom: 10 }}>System Plan not submitted</div>
+                <div style={{ fontSize: 14, color: '#737373', marginBottom: 28, lineHeight: 1.6 }}>
+                  Please complete and submit the System Plan before filling in the Product Specification.
+                </div>
+                <button
+                  onClick={() => window.location.href = 'System Plan.html'}
+                  style={{ ...hfStyles.btn, ...hfStyles.btnPrimary, gap: 8 }}
+                >
+                  Go to System Plan <HFArrowRight />
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
 
     return (
       <>
