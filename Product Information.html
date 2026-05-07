@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Product Specification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    html, body { margin: 0; padding: 0; background: #f0eee9; min-height: 100%; }
+    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script src="components/data.js"></script>
+<script type="text/babel" src="components/ui.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+  const CGI_STORAGE_KEY  = 'cgi.detailedApp.v1';
+  const PI_STORAGE_KEY   = 'cgi.productInfo.v1';
+
+  function loadAppData()      { try { return JSON.parse(localStorage.getItem(CGI_STORAGE_KEY)) || {}; } catch { return {}; } }
+  function loadProductInfo()  { try { return JSON.parse(localStorage.getItem(PI_STORAGE_KEY))  || []; } catch { return []; } }
+  function saveProductInfo(rows) { try { localStorage.setItem(PI_STORAGE_KEY, JSON.stringify(rows)); } catch {} }
+
+  // Flatten CGI_STANDARDS_TREE to leaf labels
+  function flattenStandards(nodes) {
+    const out = [];
+    (nodes || []).forEach(n => {
+      if (n.children) out.push(...flattenStandards(n.children));
+      else out.push(n.label);
+    });
+    return out;
+  }
+
+  const ALL_STANDARDS = flattenStandards(window.CGI_STANDARDS_TREE || []);
+
+  const PRODUCT_DETAIL_OPTIONS = [
+    'Overcoats', 'Jackets', 'Vests',
+    'Suits', 'Suit pants',
+    'Pants', 'Trousers',
+    'Sweaters', 'Pullovers', 'Cardigans',
+    'Shirts', 'Blouses',
+    'Undergarment', 'Sleepwear', 'Robes',
+    'T-shirts', 'Singlets',
+    'Activewear', 'Sportswear',
+    'Socks', 'Hosiery',
+    'Luggage', 'Suitcases',
+    'Gloves', 'Mittens', 'Hand covering',
+    'Neckties', 'Bow ties', 'Cravats',
+    'Scarves', 'Shawls', 'Veils',
+    'Handkerchiefs',
+    'Hats', 'Caps', 'Head coverings',
+    'Belts',
+    'Topical products',
+    'Knitted fabrics',
+    'Woven fabrics',
+    'Workwear', 'Uniforms',
+    'Dresses', 'Skirts',
+    'Brassieres', 'Suspenders', 'Garters',
+    "Babies' clothing",
+    "Babies' accessories",
+    'Bed linen', 'Bed sheets',
+    'Table linen', 'Tablecloth', 'Napkins',
+    'Towels', 'Kitchen linen', 'Toilet linen',
+    'Food contact textiles',
+    'Blankets', 'Bedspreads', 'Quilts',
+    'Curtains', 'Blinds',
+    'Upholstery',
+    'Carpets', 'Rugs', 'Floor coverings',
+    'Pillows', 'Cushions',
+    'Bags', 'Handbags', 'Totes', 'Pouches',
+    'Invasive products',
+    'Terry fabrics',
+    'Denim fabrics',
+    'Non-woven fabrics',
+    'Special fabrics',
+    'Leather',
+    'Bonded leather',
+    'Open-end yarns',
+    'Carded yarns',
+    'Semi-combed yarns',
+    'Normally combed yarns',
+    'Highly combed yarns',
+    'Super combed yarns',
+    'Filament',
+    'Yarns for hand knitting',
+    'Core-spun yarns',
+    'Fancy yarns',
+    'Tops',
+    'Lint cotton',
+    'Raw fibers',
+    'Raw silk',
+    'Combed fibers',
+    'Scoured fibers',
+    'Staple fibers',
+    'Mixed fibers',
+    'By-products',
+    'Comber noil',
+    'Cotton linter',
+    'Tanned hide',
+    'Chips (pellets)',
+    'Flakes',
+    'Popcorns',
+  ];
+
+  const PRODUCT_TREE = {
+    'Apparel': ["Men's apparel", "Women's apparel", "Babies' apparel", "Children's apparel", "Unisex apparel", "Men's denim apparel", "Women's denim apparel", "Children's denim apparel", "Unisex denim apparel"],
+    'Fabrics': ['Dyed fabrics', 'Greige fabrics', 'Undyed fabrics', 'Printed fabrics', 'Fabrics'],
+    'Yarns':   ['Dyed yarns', 'Greige yarns', 'Undyed yarns'],
+    'Fibers':  ['Dyed fibers', 'Undyed fibers'],
+  };
+
+  // ── Cascading Product Category dropdown ────────────────────────────────────────
+  function ProductCategorySelect({ group, category, tree, onChange }) {
+    const [open, setOpen]            = React.useState(false);
+    const [hoveredGroup, setHovered] = React.useState(null);
+    const ref      = React.useRef(null);
+    const [pos, setPos] = React.useState(null);
+
+    React.useEffect(() => {
+      if (!open) { setHovered(null); return; }
+      if (ref.current) {
+        const r = ref.current.getBoundingClientRect();
+        setPos({ top: r.bottom + 6, left: r.left, width: Math.max(r.width, 520) });
+      }
+      const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    const groups      = Object.keys(tree);
+    const activeGroup = hoveredGroup || (group && tree[group] ? group : null);
+    const noGroups    = groups.length === 0;
+
+    return (
+      <div
+        ref={ref}
+        style={{ ...hfStyles.dropBox, ...(open ? hfStyles.dropBoxFocus : {}), ...(noGroups ? { background: '#f5f5f4', cursor: 'not-allowed' } : {}) }}
+        onClick={() => !noGroups && setOpen(o => !o)}
+      >
+        {!category
+          ? <span style={hfStyles.placeholder}>{noGroups ? 'No product groups selected in Detailed Application' : 'Select product category…'}</span>
+          : <span style={hfStyles.singleValue}>{group} — {category}</span>}
+        <span style={hfStyles.caret}><HFCaret /></span>
+
+        {open && pos && (
+          <div
+            style={{ ...hfStyles.menu, position: 'fixed', top: pos.top, left: pos.left, width: pos.width, right: 'auto', display: 'flex', padding: 0, maxHeight: 360 }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Left: product groups */}
+            <div style={{ width: 160, flexShrink: 0, borderRight: '1px solid #f0f0f0', padding: 4, overflowY: 'auto' }}>
+              {groups.map(g => (
+                <div
+                  key={g}
+                  onMouseEnter={() => setHovered(g)}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '10px 12px', borderRadius: 6, cursor: 'default',
+                    background: activeGroup === g ? '#fafaf9' : 'transparent',
+                    fontSize: 14, fontWeight: activeGroup === g ? 600 : 500, color: '#0a0a0a',
+                    transition: 'background .08s',
+                  }}
+                >
+                  {g}
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#a3a3a3" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 2l4 3-4 3" />
+                  </svg>
+                </div>
+              ))}
+            </div>
+            {/* Right: categories for active group */}
+            <div style={{ flex: 1, padding: 4, overflowY: 'auto' }}>
+              {!activeGroup && (
+                <div style={{ padding: '12px', fontSize: 13, color: '#a3a3a3', fontStyle: 'italic' }}>
+                  Hover over a group to see categories
+                </div>
+              )}
+              {activeGroup && (tree[activeGroup] || []).map(cat => {
+                const selected = cat === category && group === activeGroup;
+                return (
+                  <div
+                    key={cat}
+                    onClick={() => { onChange({ group: activeGroup, category: cat }); setOpen(false); }}
+                    style={{
+                      padding: '10px 12px', borderRadius: 6, cursor: 'pointer',
+                      background: selected ? '#f5f5f4' : 'transparent',
+                      fontSize: 14, fontWeight: selected ? 600 : 400,
+                      color: selected ? '#0a0a0a' : '#525252',
+                      transition: 'background .08s',
+                    }}
+                    onMouseEnter={e => { if (!selected) e.currentTarget.style.background = '#fafaf9'; }}
+                    onMouseLeave={e => { if (!selected) e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    {cat}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Searchable compact multi-select for Product Detail ────────────────────────
+  function ProductDetailSelect({ values, options, onToggle, open, setOpen }) {
+    const [search, setSearch] = React.useState('');
+    const ref = React.useRef(null);
+    const [pos, setPos] = React.useState(null);
+
+    React.useEffect(() => {
+      if (!open) { setSearch(''); return; }
+      if (ref.current) {
+        const r = ref.current.getBoundingClientRect();
+        setPos({ top: r.bottom + 6, left: r.left, width: Math.max(r.width, 480) });
+      }
+      const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(null); };
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()));
+
+    return (
+      <div
+        ref={ref}
+        style={{ ...hfStyles.dropBox, ...(open ? hfStyles.dropBoxFocus : {}) }}
+        onClick={() => setOpen(open ? null : 'pi-pd')}
+      >
+        {values.length === 0
+          ? <span style={hfStyles.placeholder}>Select product detail(s)…</span>
+          : <span style={{ fontSize: 14, color: '#0a0a0a', paddingLeft: 4, lineHeight: 1.5 }}>{values.join(', ')}</span>}
+        <span style={hfStyles.caret}><HFCaret /></span>
+
+        {open && pos && (
+          <div
+            style={{ ...hfStyles.menu, position: 'fixed', top: pos.top, left: pos.left, width: pos.width, right: 'auto', padding: 0 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid #f0f0f0' }}>
+              <input
+                autoFocus
+                style={{ ...hfStyles.input, fontSize: 13, padding: '7px 10px' }}
+                placeholder="Search…"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onClick={e => e.stopPropagation()}
+              />
+            </div>
+            <div style={{ padding: '10px', display: 'flex', flexWrap: 'wrap', gap: 6, maxHeight: 280, overflowY: 'auto' }}>
+              {filtered.length === 0 && (
+                <span style={{ fontSize: 13, color: '#a3a3a3', fontStyle: 'italic' }}>No results for "{search}"</span>
+              )}
+              {filtered.map(o => {
+                const checked = values.includes(o);
+                return (
+                  <div
+                    key={o}
+                    onClick={() => onToggle(o)}
+                    style={{
+                      padding: '4px 12px', borderRadius: 999, cursor: 'pointer', fontSize: 13,
+                      border: `1px solid ${checked ? '#0a0a0a' : '#e7e5e4'}`,
+                      background: checked ? '#0a0a0a' : '#fff',
+                      color: checked ? '#fff' : '#525252',
+                      fontWeight: checked ? 500 : 400,
+                      whiteSpace: 'nowrap',
+                      transition: 'all .1s',
+                    }}
+                    onMouseEnter={e => { if (!checked) { e.currentTarget.style.borderColor = '#a3a3a3'; e.currentTarget.style.color = '#0a0a0a'; } }}
+                    onMouseLeave={e => { if (!checked) { e.currentTarget.style.borderColor = '#e7e5e4'; e.currentTarget.style.color = '#525252'; } }}
+                  >
+                    {o}
+                  </div>
+                );
+              })}
+            </div>
+            {values.length > 0 && (
+              <div style={{ padding: '6px 12px', borderTop: '1px solid #f0f0f0', fontSize: 12, color: '#737373' }}>
+                {values.length} selected
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Extract display name from a site key (strips address part for duplicate-named sites)
+  function siteKeyLabel(key) { return key.split('|||')[0]; }
+
+  // ── Multi-select with hover-address disambiguation for sites ──────────────────
+  function SiteMultiSelect({ values, options, onToggle, open, setOpen, placeholder }) {
+    const [hoveredKey, setHoveredKey] = React.useState(null);
+    const ref = React.useRef(null);
+    const [pos, setPos] = React.useState(null);
+
+    React.useEffect(() => {
+      if (!open) { setHoveredKey(null); return; }
+      if (ref.current) {
+        const r = ref.current.getBoundingClientRect();
+        setPos({ top: r.bottom + 6, left: r.left, width: Math.max(r.width, 320) });
+      }
+      const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(null); };
+      document.addEventListener('mousedown', handler);
+      return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    return (
+      <div
+        ref={ref}
+        style={{ ...hfStyles.dropBox, ...(open ? hfStyles.dropBoxFocus : {}), ...(options.length === 0 ? { background: '#f5f5f4', cursor: 'not-allowed' } : {}) }}
+        onClick={() => options.length > 0 && setOpen(open ? null : 'pi-sites')}
+      >
+        {values.length === 0
+          ? <span style={hfStyles.placeholder}>{placeholder}</span>
+          : values.map(k => (
+              <span key={k} style={hfStyles.chip}>
+                {siteKeyLabel(k)}
+                <button
+                  style={hfStyles.chipX}
+                  onClick={e => { e.stopPropagation(); onToggle(k); }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#e7e5e4'; e.currentTarget.style.color = '#0a0a0a'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#737373'; }}
+                >
+                  <HFX />
+                </button>
+              </span>
+            ))}
+        <span style={hfStyles.caret}><HFCaret /></span>
+
+        {open && pos && (
+          <div
+            style={{ ...hfStyles.menu, position: 'fixed', top: pos.top, left: pos.left, width: pos.width, right: 'auto' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {options.length === 0 && (
+              <div style={{ padding: '12px 10px', fontSize: 13, color: '#a3a3a3', fontStyle: 'italic' }}>No sites available.</div>
+            )}
+            {options.map(opt => {
+              const checked = values.includes(opt.key);
+              const showAddr = opt.isDuplicate && hoveredKey === opt.key;
+              return (
+                <div
+                  key={opt.key}
+                  style={{
+                    padding: showAddr ? '10px 12px 8px' : '10px 12px',
+                    borderRadius: 6, cursor: 'pointer',
+                    background: checked || hoveredKey === opt.key ? '#fafaf9' : 'transparent',
+                    transition: 'background .08s',
+                  }}
+                  onMouseEnter={() => setHoveredKey(opt.key)}
+                  onMouseLeave={() => setHoveredKey(null)}
+                  onClick={() => onToggle(opt.key)}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ ...hfStyles.check, ...(checked ? hfStyles.checkOn : {}) }}>
+                      {checked && <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1.5 5.5l2 2L8.5 2.5" /></svg>}
+                    </span>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: '#0a0a0a' }}>{opt.label}</span>
+                  </div>
+                  {showAddr && (
+                    <div style={{ fontSize: 12, color: '#737373', paddingLeft: 26, marginTop: 4, lineHeight: 1.45 }}>
+                      {opt.address}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function emptyPending() {
+    return {
+      productGroup:        '',
+      productCategory:     '',
+      productDetail:       [],
+      claimedMaterials:    [],
+      nonClaimedMaterials: '',
+      standards:           [],
+      processingSteps:     [],
+      wastagePercentage:   '',
+      applicableSites:     [],
+    };
+  }
+
+  function ProductInformation() {
+    const appData            = React.useMemo(loadAppData, []);
+    const savedClaimedMats   = (appData.products && appData.products.claimedMaterials) || [];
+    const selectedGroups     = (appData.products && appData.products.productGroup) || [];
+    const selectedStandards  = appData.applyingStandards || [];
+    const allSites           = appData.sites || [];
+    const siteProcesses      = [...new Set(allSites.flatMap(s => s.processes || []))];
+    const filteredTree   = Object.fromEntries(
+      Object.entries(PRODUCT_TREE).filter(([g]) => selectedGroups.includes(g))
+    );
+
+    const [rows,    setRows]    = React.useState(() => loadProductInfo());
+    const [pending, setPending] = React.useState(emptyPending());
+    const [openField, setOpenField] = React.useState(null);
+
+    // Sites whose processes overlap with the currently selected processing steps
+    const applicableSiteOptions = React.useMemo(() => {
+      if (pending.processingSteps.length === 0) return [];
+      const matching = allSites.filter(s => (s.processes || []).some(p => pending.processingSteps.includes(p)));
+      const nameCounts = {};
+      matching.forEach(s => { nameCounts[s.siteName] = (nameCounts[s.siteName] || 0) + 1; });
+      return matching
+        .filter(s => s.siteName)
+        .map(s => ({
+          key:         nameCounts[s.siteName] > 1 ? `${s.siteName}|||${s.siteAddress}` : s.siteName,
+          label:       s.siteName,
+          address:     s.siteAddress || '',
+          isDuplicate: nameCounts[s.siteName] > 1,
+        }));
+    }, [pending.processingSteps]);
+
+    // Clear selected applicable sites that no longer match when processing steps change
+    React.useEffect(() => {
+      const validKeys = new Set(applicableSiteOptions.map(o => o.key));
+      setPending(p => ({
+        ...p,
+        applicableSites: p.applicableSites.filter(k => validKeys.has(k)),
+      }));
+    }, [applicableSiteOptions.map(o => o.key).join('|')]);
+
+    // Persist on every change
+    React.useEffect(() => { saveProductInfo(rows); }, [rows]);
+
+    const update = (k, v) => setPending(p => ({ ...p, [k]: v }));
+    const toggle = (k, v) => setPending(p => ({
+      ...p,
+      [k]: p[k].includes(v) ? p[k].filter(x => x !== v) : [...p[k], v],
+    }));
+
+    const canCommit = pending.productCategory && pending.productDetail.length > 0;
+
+    const commitRow = () => {
+      if (!canCommit) return;
+      const row = {
+        productGroup:        pending.productGroup,
+        productCategory:     pending.productCategory,
+        productDetail:       pending.productDetail,
+        claimedMaterials:    pending.claimedMaterials,
+        nonClaimedMaterials: pending.nonClaimedMaterials,
+        standards:           pending.standards,
+        processingSteps:     pending.processingSteps,
+        wastagePercentage:   pending.wastagePercentage,
+        applicableSites:     pending.applicableSites,
+      };
+      setRows(prev => [...prev, row]);
+      setPending(emptyPending());
+      setOpenField(null);
+    };
+
+    const removeRow = (i) => setRows(prev => prev.filter((_, idx) => idx !== i));
+    const editRow = (i) => {
+      const r = rows[i];
+      setPending({ ...emptyPending(), ...r, pendingRaw: '', pendingAttr: '' });
+      removeRow(i);
+      setOpenField(null);
+    };
+
+    const lbl      = { fontSize: 11, fontWeight: 600, color: '#737373', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'block' };
+    const focusOn  = (e) => { e.target.style.borderColor = '#0a0a0a'; e.target.style.boxShadow = '0 0 0 3px rgba(10,10,10,0.06)'; };
+    const focusOff = (e) => { e.target.style.borderColor = '#e5e5e5'; e.target.style.boxShadow = 'none'; };
+
+    const chip = { display: 'inline-flex', alignItems: 'center', background: '#f5f5f4', border: '1px solid #e7e5e4', borderRadius: 6, fontSize: 12, fontWeight: 500, color: '#0a0a0a', padding: '2px 8px', marginRight: 4, marginBottom: 2 };
+
+    return (
+      <>
+        <HFTopNav />
+        <div style={hfStyles.page}>
+          <div style={hfStyles.wrap}>
+
+            {/* Breadcrumb */}
+            <div style={hfStyles.crumbs}>
+              <a href="index.html" style={{ color: '#737373', textDecoration: 'none', fontWeight: 500 }}>Home</a>
+              <span style={hfStyles.crumbSep}>/</span>
+              <span style={hfStyles.crumbActive}>Product Specification</span>
+            </div>
+
+            {/* Heading */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={hfStyles.h1}>Product Specification</div>
+              <div style={hfStyles.sub}>Enter product details below and add them to the table.</div>
+            </div>
+
+            {/* Input panel */}
+            <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 10, padding: '24px', marginBottom: 16 }}>
+
+              {/* Product Category — cascading group → category */}
+              <div style={{ marginBottom: 16 }}>
+                <span style={lbl}>Product Category <span style={{ color: '#e53e3e' }}>*</span></span>
+                <ProductCategorySelect
+                  group={pending.productGroup}
+                  category={pending.productCategory}
+                  tree={filteredTree}
+                  onChange={({ group, category }) => setPending(p => ({ ...p, productGroup: group, productCategory: category }))}
+                />
+              </div>
+
+              {/* Product Detail */}
+              <div style={{ marginBottom: 16 }}>
+                <span style={lbl}>Product Detail <span style={{ color: '#e53e3e' }}>*</span></span>
+                <ProductDetailSelect
+                  values={pending.productDetail}
+                  options={PRODUCT_DETAIL_OPTIONS}
+                  onToggle={(v) => toggle('productDetail', v)}
+                  open={openField === 'pi-pd'}
+                  setOpen={setOpenField}
+                />
+              </div>
+
+              {/* Claimed Material */}
+              <div style={{ marginBottom: 16 }}>
+                <span style={lbl}>Claimed Material</span>
+                <HFMultiSelect
+                  id="pi-cm"
+                  values={pending.claimedMaterials}
+                  options={savedClaimedMats}
+                  onToggle={(v) => toggle('claimedMaterials', v)}
+                  open={openField === 'pi-cm'}
+                  setOpen={setOpenField}
+                  placeholder={savedClaimedMats.length === 0 ? 'No claimed materials found — complete Detailed Application first' : 'Select claimed materials…'}
+                  showSelectAll={false}
+                />
+              </div>
+
+              {/* Non-Claimed Material */}
+              <div style={{ marginBottom: 16 }}>
+                <span style={lbl}>Non-Claimed Material</span>
+                <input
+                  style={{ ...hfStyles.input }}
+                  placeholder="Enter non-claimed material…"
+                  value={pending.nonClaimedMaterials}
+                  onChange={(e) => update('nonClaimedMaterials', e.target.value)}
+                  onFocus={focusOn} onBlur={focusOff}
+                />
+              </div>
+
+              {/* Standards */}
+              <div style={{ marginBottom: 16 }}>
+                <span style={lbl}>Standards</span>
+                <HFMultiSelect
+                  id="pi-std"
+                  values={pending.standards}
+                  options={selectedStandards}
+                  onToggle={(v) => toggle('standards', v)}
+                  open={openField === 'pi-std'}
+                  setOpen={setOpenField}
+                  placeholder={selectedStandards.length === 0 ? 'No standards found — complete Detailed Application first' : 'Select standards…'}
+                />
+              </div>
+
+              {/* Processing Steps */}
+              <div style={{ marginBottom: 16 }}>
+                <span style={lbl}>Processing Steps</span>
+                <HFMultiSelect
+                  id="pi-ps"
+                  values={pending.processingSteps}
+                  options={siteProcesses}
+                  onToggle={(v) => toggle('processingSteps', v)}
+                  open={openField === 'pi-ps'}
+                  setOpen={setOpenField}
+                  placeholder={siteProcesses.length === 0 ? 'No processes found — complete Detailed Application first' : 'Select processing steps…'}
+                  showSelectAll={false}
+                />
+              </div>
+
+              {/* Wastage Percentage */}
+              <div style={{ marginBottom: 16 }}>
+                <span style={lbl}>Wastage Percentage</span>
+                <input
+                  style={{ ...hfStyles.input }}
+                  placeholder="0.00"
+                  value={pending.wastagePercentage}
+                  onChange={(e) => update('wastagePercentage', e.target.value)}
+                  onFocus={focusOn} onBlur={focusOff}
+                />
+              </div>
+
+              {/* Applicable Sites */}
+              <div style={{ marginBottom: 20 }}>
+                <span style={lbl}>Applicable Sites</span>
+                <SiteMultiSelect
+                  values={pending.applicableSites}
+                  options={applicableSiteOptions}
+                  onToggle={(k) => toggle('applicableSites', k)}
+                  open={openField === 'pi-sites'}
+                  setOpen={setOpenField}
+                  placeholder={
+                    pending.processingSteps.length === 0
+                      ? 'Select processing steps first…'
+                      : applicableSiteOptions.length === 0
+                      ? 'No sites match the selected processing steps'
+                      : 'Select applicable sites…'
+                  }
+                />
+              </div>
+
+              {/* Add to Table */}
+              <button
+                onClick={commitRow}
+                disabled={!canCommit}
+                style={{ ...hfStyles.btn, ...hfStyles.btnPrimary, gap: 6, ...(!canCommit ? { opacity: 0.4, cursor: 'not-allowed' } : {}) }}
+              >
+                <HFPlus /> Add to Table
+              </button>
+              {!canCommit && (
+                <span style={{ fontSize: 12, color: '#a3a3a3', marginLeft: 12 }}>Product Category and at least one Product Detail are required.</span>
+              )}
+            </div>
+
+            {/* Table */}
+            {rows.length > 0 && (
+              <div style={{ background: '#fff', border: '1px solid #ebebeb', borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+                    <thead>
+                      <tr style={{ background: '#fafaf9', borderBottom: '1px solid #ebebeb' }}>
+                        {['Product Group', 'Category', 'Detail', 'Claimed Materials', 'Non-Claimed', 'Standards', 'Processing Steps', 'Wastage %', 'Applicable Sites', ''].map((h, i) => (
+                          <th key={i} style={{ padding: '10px 14px', fontSize: 11, fontWeight: 600, color: '#737373', textTransform: 'uppercase', letterSpacing: 0.6, textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row, ri) => {
+                        // Compute rowspan: count consecutive rows below with the same productGroup
+                        const isGroupStart = ri === 0 || rows[ri - 1].productGroup !== row.productGroup;
+                        const rowSpan = isGroupStart
+                          ? rows.slice(ri).findIndex((r, j) => j > 0 && r.productGroup !== row.productGroup)
+                          : -1;
+                        const span = isGroupStart ? (rowSpan === -1 ? rows.length - ri : rowSpan) : 0;
+                        return (
+                        <tr key={ri} style={{ borderBottom: ri < rows.length - 1 ? '1px solid #f5f5f4' : 'none' }}>
+                          {isGroupStart && (
+                            <td rowSpan={span} style={{ padding: '12px 14px', fontSize: 13, fontWeight: 600, color: '#0a0a0a', verticalAlign: 'middle', borderRight: '1px solid #f0f0f0' }}>{row.productGroup}</td>
+                          )}
+                          <td style={{ padding: '12px 14px', fontSize: 13, color: '#525252', verticalAlign: 'top' }}>{row.productCategory}</td>
+                          <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                            {(row.productDetail || []).length === 0
+                              ? <span style={{ color: '#a3a3a3', fontSize: 13 }}>—</span>
+                              : (row.productDetail || []).map((d, i) => <span key={i} style={chip}>{d}</span>)}
+                          </td>
+                          <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                            {(row.claimedMaterials || []).length === 0
+                              ? <span style={{ color: '#a3a3a3', fontSize: 13 }}>—</span>
+                              : row.claimedMaterials.map((m, i) => <span key={i} style={chip}>{m}</span>)}
+                          </td>
+                          <td style={{ padding: '12px 14px', fontSize: 13, color: '#525252', verticalAlign: 'top' }}>
+                            {row.nonClaimedMaterials || '—'}
+                          </td>
+                          <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                            {row.standards.length === 0
+                              ? <span style={{ color: '#a3a3a3', fontSize: 13 }}>—</span>
+                              : row.standards.map((s, i) => <span key={i} style={chip}>{s}</span>)}
+                          </td>
+                          <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                            {row.processingSteps.length === 0
+                              ? <span style={{ color: '#a3a3a3', fontSize: 13 }}>—</span>
+                              : row.processingSteps.map((s, i) => <span key={i} style={chip}>{s}</span>)}
+                          </td>
+                          <td style={{ padding: '12px 14px', fontSize: 13, color: '#525252', verticalAlign: 'top' }}>{row.wastagePercentage || '—'}</td>
+                          <td style={{ padding: '12px 14px', verticalAlign: 'top' }}>
+                            {(row.applicableSites || []).length === 0
+                              ? <span style={{ color: '#a3a3a3', fontSize: 13 }}>—</span>
+                              : row.applicableSites.map((k, i) => <span key={i} style={chip}>{siteKeyLabel(k)}</span>)}
+                          </td>
+                          <td style={{ padding: '12px 14px', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
+                            <button
+                              onClick={() => editRow(ri)}
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a3a3a3', padding: 4, borderRadius: 4 }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = '#0a0a0a'; e.currentTarget.style.background = '#f5f5f4'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = '#a3a3a3'; e.currentTarget.style.background = 'transparent'; }}
+                            >
+                              <HFEdit />
+                            </button>
+                            <button
+                              onClick={() => removeRow(ri)}
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#a3a3a3', padding: 4, borderRadius: 4 }}
+                              onMouseEnter={(e) => { e.currentTarget.style.color = '#b91c1c'; e.currentTarget.style.background = '#fff1f2'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.color = '#a3a3a3'; e.currentTarget.style.background = 'transparent'; }}
+                            >
+                              <HFTrash />
+                            </button>
+                          </td>
+                        </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Bottom nav */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24, marginBottom: 48 }}>
+              <button
+                onClick={() => window.location.href = 'index.html'}
+                style={{ ...hfStyles.btn, ...hfStyles.btnSecondary, gap: 8 }}
+              >
+                ← Previous
+              </button>
+              <button
+                onClick={() => window.location.href = 'Product Information Submitted.html'}
+                style={{ ...hfStyles.btn, ...hfStyles.btnPrimary, gap: 8 }}
+              >
+                Submit Product Specification <HFArrowRight />
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<ProductInformation />);
+</script>
+</body>
+</html>

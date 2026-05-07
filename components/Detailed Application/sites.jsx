@@ -147,6 +147,7 @@ function HFSites({ sites, setSites, availableStandards, onPrev, onNext }) {
     setEditIndex(i);
     setEditDraft({ ...sites[i], processes: [...(sites[i].processes || [])], standards: [...(sites[i].standards || [])] });
     setOpenField(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const saveEdit = () => {
@@ -216,7 +217,7 @@ function HFSites({ sites, setSites, availableStandards, onPrev, onNext }) {
             openField={openField}
             setOpenField={setOpenField}
             sectionId={`edit-${editIndex}`}
-            title={`Editing site #${editIndex + 1}`}
+            title={`Editing site — ${sites[editIndex]?.siteName || `#${editIndex + 1}`}`}
             onSave={saveEdit}
             canSave={validSite(editDraft) && !(editDraft.siteType === 'Main' && mainTakenBy !== -1 && mainTakenBy !== editIndex)}
             saveLabel="Save changes"
